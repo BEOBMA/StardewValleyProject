@@ -1,8 +1,8 @@
 package org.beobma.stardewvalleyproject.time
 
 import org.beobma.stardewvalleyproject.StardewValley
-import org.beobma.stardewvalleyproject.info.InfoManager
-import org.beobma.stardewvalleyproject.info.InfoManager.Companion.players
+import org.beobma.stardewvalleyproject.data.DataManager.Companion.gameData
+import org.beobma.stardewvalleyproject.data.Season
 import org.beobma.stardewvalleyproject.system.SystemManager
 import org.bukkit.Bukkit
 import org.bukkit.scheduler.BukkitRunnable
@@ -10,7 +10,6 @@ import org.bukkit.scheduler.BukkitTask
 
 class TimeManager {
     companion object {
-        var gameTime = 0L
         private var bukkitTask: BukkitTask? = null
     }
 
@@ -30,24 +29,26 @@ class TimeManager {
         StardewValley().loggerMessage("StardewValley Time Stop")
         bukkitTask?.cancel()
         bukkitTask = null
-        gameTime = 0
+        gameData.time = 0
     }
 
     private fun startGameTime() {
         bukkitTask = object : BukkitRunnable() {
             override fun run() {
-                gameTime += 20
+                gameData.time += 20
 
-                if (gameTime >= 24000) {
-                    gameTime -= 24000
+                if (gameData.time >= 24000) {
+                    gameData.time -= 24000
                 }
 
                 for (world in Bukkit.getWorlds()) {
-                    world.time = gameTime
+                    world.time = gameData.time
                 }
 
-                if (gameTime in 18000..23999) {
-                    handlePlayerFaint()
+                if (gameData.time in 18000..23999) {
+                    dayEnd()
+
+                    //하루가 끝남
                 }
             }
         }.runTaskTimer(StardewValley.instance, 0, 37)
@@ -60,7 +61,7 @@ class TimeManager {
         val systemManager = SystemManager()
 
         systemManager.run {
-            players.forEach {
+            gameData.players.forEach {
                 it.faint()
             }
         }
@@ -68,16 +69,33 @@ class TimeManager {
         timePlay()
     }
 
+    fun dayEnd() {
+        StardewValley().loggerMessage("StardewValley Day End")
+        gameData.day++
+
+        if (gameData.day > 28) {
+            when (gameData.season) {
+                Season.Spring -> gameData.season = Season.Summer
+                Season.Summer -> gameData.season = Season.Autumn
+                Season.Autumn -> gameData.season = Season.Winter
+                Season.Winter -> gameData.season = Season.Spring
+            }
+            gameData.day = 1
+        }
+        handlePlayerFaint()
+
+
+    }
 
     fun getHour(): Int {
-        val totalMinutes = (gameTime * 1440) / 24000
+        val totalMinutes = (gameData.time * 1440) / 24000
         val hours = (totalMinutes / 60).toInt()
 
         return hours
     }
 
     fun getMinutes(): Int {
-        val totalMinutes = (gameTime * 1440) / 24000
+        val totalMinutes = (gameData.time * 1440) / 24000
         val minutes = (totalMinutes % 60).toInt()
 
         return minutes
