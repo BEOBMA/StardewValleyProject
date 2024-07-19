@@ -93,8 +93,15 @@ class DefaultTimeHandler : TimeHandler {
     }
 
     private fun dayEnd() {
+        val plantManager = PlantManager(DefaultPlantHanler())
+
         logMessage("StardewValley Day End")
         gameData.day++
+        plantManager.run {
+            gameData.plantList.forEach {
+                it.growth()
+            }
+        }
 
         if (gameData.day > 28) {
             gameData.season = when (gameData.season) {
