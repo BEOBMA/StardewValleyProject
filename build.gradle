@@ -1,7 +1,6 @@
 plugins {
     id 'java'
     id 'org.jetbrains.kotlin.jvm'
-    id "com.github.johnrengelman.shadow" version "8.1.1"
     id 'org.jetbrains.kotlin.plugin.serialization' version '2.0.0-RC3'
 }
 
@@ -51,12 +50,4 @@ processResources {
 }
 kotlin {
     jvmToolchain(17)
-}
-
-shadowJar{
-    archivesBaseName = 'StardewValleyProject'
-    destinationDirectory = file("C:\\Users\\ssdss\\OneDrive\\바탕 화면\\게임\\마인크래프트\\스타듀 밸리 프로젝트\\plugins")
-    manifest {
-        attributes 'Main-Class': 'src/main/java/org/beobma/stardewvalleyproject/StardewValley.kt'
-    }
 }
