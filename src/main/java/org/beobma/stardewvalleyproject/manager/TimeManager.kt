@@ -16,35 +16,24 @@ interface TimeHandler {
 
 class DefaultTimeHandler : TimeHandler {
     companion object {
-        private const val TICKS_PER_DAY = 24000
-        private const val TICKS_INCREMENT = 20
-        private const val DAY_END_TICKS_START = 18000
-        private const val DAY_END_TICKS_END = 23999
-        private const val MINUTES_IN_A_DAY = 1440
-        private const val MINUTES_IN_AN_HOUR = 60
-
-        private var bukkitTask: BukkitTask? = null
+        private var timeBukkitTask: BukkitTask? = null
     }
 
     override fun timePlay() {
-        logMessage("StardewValley Time Play")
         startGameTime()
     }
 
     override fun timePause() {
-        logMessage("StardewValley Time Pause")
-        bukkitTask?.cancel()
-        bukkitTask = null
+        timeBukkitTask?.cancel()
+        timeBukkitTask = null
     }
 
     override fun getHour(): Int {
-        val totalMinutes = (gameData.time * MINUTES_IN_A_DAY) / TICKS_PER_DAY
-        return (totalMinutes / MINUTES_IN_AN_HOUR).toInt()
+        return gameData.hour
     }
 
     override fun getMinutes(): Int {
-        val totalMinutes = (gameData.time * MINUTES_IN_A_DAY) / TICKS_PER_DAY
-        return (totalMinutes % MINUTES_IN_AN_HOUR).toInt()
+        return gameData.minute
     }
 
     override fun getSeason(): Season {
@@ -52,30 +41,33 @@ class DefaultTimeHandler : TimeHandler {
     }
 
     private fun timeStop() {
-        logMessage("StardewValley Time Stop")
-        bukkitTask?.cancel()
-        bukkitTask = null
-        gameData.time = 0
+        timeBukkitTask?.cancel()
+        timeBukkitTask = null
+        gameData.hour = 6
+        gameData.minute = 0
     }
 
     private fun startGameTime() {
-        bukkitTask = object : BukkitRunnable() {
+        if (timeBukkitTask is BukkitTask) return
+
+        timeBukkitTask = object : BukkitRunnable() {
             override fun run() {
-                gameData.time += TICKS_INCREMENT
+                gameData.minute += 10
 
-                if (gameData.time >= TICKS_PER_DAY) {
-                    gameData.time -= TICKS_PER_DAY
+                if (gameData.minute >= 60) {
+                    gameData.hour += 1
                 }
 
-                for (world in Bukkit.getWorlds()) {
-                    world.time = gameData.time
-                }
-
-                if (gameData.time in DAY_END_TICKS_START..DAY_END_TICKS_END) {
+                // 데드라인 02시
+                if (gameData.hour == 2) {
                     dayEnd()
                 }
+
+                val minecraftTime = (gameData.hour * 1000) + ((gameData.minute / 60.0) * 1000).toInt()
+                val world = Bukkit.getWorld("world")
+                world?.time = minecraftTime.toLong()
             }
-        }.runTaskTimer(StardewValley.instance, 0, 37)
+        }.runTaskTimer(StardewValley.instance, 0, 125)
     }
 
     private fun handlePlayerFaint() {
