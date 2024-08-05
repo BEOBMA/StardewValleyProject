@@ -1,14 +1,12 @@
 package org.beobma.stardewvalleyproject.manager
 
-import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.modules.SerializersModule
-import kotlinx.serialization.modules.contextual
+import com.google.gson.Gson
+import com.google.gson.GsonBuilder
 import org.beobma.stardewvalleyproject.StardewValley
 import org.beobma.stardewvalleyproject.data.GameData
-import org.beobma.stardewvalleyproject.serializer.ItemStackSerializer
 import java.io.File
+import java.io.FileReader
+import java.io.FileWriter
 import java.io.IOException
 
 interface DataHandler {
@@ -16,17 +14,13 @@ interface DataHandler {
     fun loadData()
 }
 
+
 class DefaultDataHandler : DataHandler {
     private val folder: File = File(StardewValley.instance.dataFolder, "/data")
-    private val json = Json {
-        prettyPrint = true
-        serializersModule = SerializersModule {
-            contextual(ItemStackSerializer())
-        }
-    }
+    private val gson: Gson = GsonBuilder().setPrettyPrinting().create()
 
     companion object {
-        var gameData = GameData(mutableListOf(), mutableListOf(), 0L, Season.Spring, 1)
+        var gameData = GameData(6, 0, Season.Spring, 1, mutableListOf(), mutableListOf())
     }
 
     override fun saveData() {
@@ -35,8 +29,10 @@ class DefaultDataHandler : DataHandler {
             if (!folder.exists()) {
                 folder.mkdirs()
             }
-            val data = json.encodeToString(gameData)
-            File(folder, "data.json").writeText(data)
+            val dataFile = File(folder, "data.json")
+            FileWriter(dataFile).use { writer ->
+                gson.toJson(gameData, writer)
+            }
         } catch (e: IOException) {
             logMessage("Failed to save data: ${e.message}")
         }
@@ -49,18 +45,21 @@ class DefaultDataHandler : DataHandler {
             return
         }
         try {
-            val data = File(folder, "data.json")
-            if (data.exists()) {
-                val newGameData = data.readText()
-                gameData = json.decodeFromString(newGameData)
+            val dataFile = File(folder, "data.json")
+            if (dataFile.exists()) {
+                FileReader(dataFile).use { reader ->
+                    gameData = gson.fromJson(reader, GameData::class.java)
+                }
             }
         } catch (e: IOException) {
+            logMessage("Failed to load data: ${e.message}")
+        } catch (e: Exception) {
             logMessage("Failed to load data: ${e.message}")
         }
     }
 
     private fun logMessage(message: String) {
-        StardewValley().loggerMessage(message)
+        StardewValley.instance.loggerMessage(message)
     }
 }
 

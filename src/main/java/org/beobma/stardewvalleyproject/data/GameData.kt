@@ -1,17 +1,17 @@
 package org.beobma.stardewvalleyproject.data
 
-import kotlinx.serialization.Serializable
 import org.beobma.stardewvalleyproject.plant.Plant
 import org.beobma.stardewvalleyproject.manager.Season
 import org.bukkit.block.Block
 import org.bukkit.entity.Player
+import java.io.Serializable
 
-@Serializable
 data class GameData(
-    val players: MutableList<Player>,
-    val plantList: MutableList<Plant>,
-    var time: Long,
+    var hour: Int,
+    var minute: Int,
     var season: Season,
     var day: Int,
+    val players: MutableList<Player>,
+    val plantList: MutableList<Plant>,
     val blockToPlantMap: MutableMap<Block, Plant> = mutableMapOf()
-)
+) : Serializable
