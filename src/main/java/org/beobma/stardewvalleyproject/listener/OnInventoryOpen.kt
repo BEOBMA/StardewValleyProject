@@ -9,12 +9,12 @@ import org.bukkit.event.Listener
 import org.bukkit.event.inventory.InventoryOpenEvent
 
 class OnInventoryOpen : Listener{
+    private val utilManager = UtilManager(DefaultUtileHandler())
+    private val timeManager = TimeManager(DefaultTimeHandler())
 
     @EventHandler
     fun onInventoryOpen(event: InventoryOpenEvent) {
-        val utilManager = UtilManager(DefaultUtileHandler())
         if (!utilManager.isSingle()) return
-        val timeManager = TimeManager(DefaultTimeHandler())
         timeManager.timePause()
     }
 }
