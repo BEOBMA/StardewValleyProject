@@ -5,7 +5,7 @@ import org.bukkit.Material
 import org.bukkit.inventory.ItemStack
 
 class WateringCan {
-    val wateringCan = ItemStack(Material.PAPER, 1).apply {
+    private val wateringCan = ItemStack(Material.PAPER, 1).apply {
         itemMeta = itemMeta.apply {
             displayName(Component.text("물뿌리개"))
             lore(
