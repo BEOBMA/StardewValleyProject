@@ -6,12 +6,12 @@ import org.bukkit.event.Listener
 import org.bukkit.event.inventory.InventoryCloseEvent
 
 class OnInventoryClose : Listener {
+    private val utilManager = UtilManager(DefaultUtileHandler())
+    private val timeManager = TimeManager(DefaultTimeHandler())
 
     @EventHandler
     fun onInventoryClose(event: InventoryCloseEvent) {
-        val utilManager = UtilManager(DefaultUtileHandler())
         if (!utilManager.isSingle()) return
-        val timeManager = TimeManager(DefaultTimeHandler())
         timeManager.timePlay()
     }
 }
