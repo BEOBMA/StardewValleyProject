@@ -1,0 +1,4 @@
+name: StardewValley
+version: '${version}'
+main: org.beobma.stardewvalleyproject.StardewValley
+api-version: '1.20'
