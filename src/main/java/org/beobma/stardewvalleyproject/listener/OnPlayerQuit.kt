@@ -8,11 +8,11 @@ import org.bukkit.event.Listener
 import org.bukkit.event.player.PlayerQuitEvent
 
 class OnPlayerQuit : Listener {
+    private val timeManager = TimeManager(DefaultTimeHandler())
 
     @EventHandler
     fun onPlayerQuit(event: PlayerQuitEvent) {
         val player = event.player
-        val timeManager = TimeManager(DefaultTimeHandler())
 
         gameData.players.remove(player)
         if (gameData.players.isEmpty()) {
