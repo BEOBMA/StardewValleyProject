@@ -2,7 +2,6 @@ plugins {
     id 'java'
     id 'org.jetbrains.kotlin.jvm'
     id "com.github.johnrengelman.shadow" version "8.1.1"
-    id 'org.jetbrains.kotlin.plugin.serialization' version '2.0.0-RC3'
 }
 
 group = 'org.beobma'
@@ -22,7 +21,6 @@ repositories {
 
 dependencies {
     compileOnly "io.papermc.paper:paper-api:1.20.2-R0.1-SNAPSHOT"
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.0")
 }
 
 def targetJavaVersion = 17
@@ -55,7 +53,7 @@ kotlin {
 
 shadowJar{
     archivesBaseName = 'StardewValleyProject'
-    destinationDirectory = file("C:\\Users\\ssdss\\OneDrive\\바탕 화면\\게임\\마인크래프트\\스타듀 밸리 프로젝트\\plugins")
+    destinationDirectory = file("C:\\Users\\ssdss\\OneDrive\\바탕 화면\\서버\\마인크래프트\\스타듀 밸리 프로젝트\\plugins")
     manifest {
         attributes 'Main-Class': 'src/main/java/org/beobma/stardewvalleyproject/StardewValley.kt'
     }
