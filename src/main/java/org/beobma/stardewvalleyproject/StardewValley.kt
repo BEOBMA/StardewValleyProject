@@ -1,5 +1,6 @@
 package org.beobma.stardewvalleyproject
 
+import org.beobma.stardewvalleyproject.config.PlantConfig
 import org.beobma.stardewvalleyproject.listener.*
 import org.beobma.stardewvalleyproject.manager.DataManager
 import org.beobma.stardewvalleyproject.manager.DefaultDataHandler
@@ -15,10 +16,11 @@ class StardewValley : JavaPlugin() {
     }
 
     override fun onEnable() {
-        val dataManager = DataManager(DefaultDataHandler())
-
         instance = this
+
+        val dataManager = DataManager(DefaultDataHandler())
         registerEvents()
+        pluginConfig()
         dataManager.loadData()
 
         loggerMessage("StardewValley Plugin Enable")
@@ -33,6 +35,10 @@ class StardewValley : JavaPlugin() {
         dataManager.saveData()
 
         loggerMessage("StardewValley Plugin Disable")
+    }
+
+    private fun pluginConfig() {
+        PlantConfig()
     }
 
     private fun registerEvents() {
