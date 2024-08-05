@@ -83,12 +83,12 @@ class DefaultPlantHanler : PlantHandler {
             val yield = Random.nextInt(1, this.yield + 1)
 
             repeat(yield) {
-                player.inventory.addItem(this.harvestItems)
+                player.inventory.addItem(this.getHarvestItem())
             }
             return
         }
 
-        player.inventory.addItem(this.harvestItems)
+        player.inventory.addItem(this.getHarvestItem())
     }
 
     private fun getCustomModelData(block: Block): Int? {

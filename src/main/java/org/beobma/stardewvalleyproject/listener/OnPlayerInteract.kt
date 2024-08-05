@@ -27,7 +27,7 @@ class OnPlayerInteract : Listener {
             return
         }
 
-        val seedItem = plantManager.getRegisterPlantList().find { it.seedItem == item }
+        val seedItem = plantManager.getRegisterPlantList().find { it.getSeedItem() == item }
         seedItem?.let {
             plantManager.run { it.plant(block) }
         }
