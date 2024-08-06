@@ -59,10 +59,6 @@ class DefaultDataHandler : DataHandler {
                     val loadedData = gson.fromJson(reader, GameData::class.java)
                     if (loadedData is GameData) {
                         gameData = loadedData
-                        StardewValley.instance.loggerMessage("$gameData")
-                        val minecraftTime = (gameData.hour * 1000) + ((gameData.minute / 60.0) * 1000).toInt()
-                        val world = Bukkit.getWorld("world")
-                        world?.time = minecraftTime.toLong()
                     } else {
                         logMessage("Loaded data is not valid, initializing with default values.")
                         gameData = GameData(6, 0, Season.Spring, 1, mutableListOf(), mutableListOf(), mutableMapOf())
