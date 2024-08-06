@@ -49,6 +49,7 @@ class DefaultPlantHanler : PlantHandler {
 
         val int = getCustomModelData(block!!)
 
+        isWater = false
         if (harvestCycle > 0) {
             harvestCycle -= 1
         }
