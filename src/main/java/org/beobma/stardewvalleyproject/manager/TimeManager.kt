@@ -56,10 +56,11 @@ class DefaultTimeHandler : TimeHandler {
 
                 if (gameData.minute >= 60) {
                     gameData.hour += 1
+                    gameData.minute = 0
                 }
 
                 // 데드라인 02시
-                if (gameData.hour == 2) {
+                if (gameData.hour in 2..5) {
                     dayEnd()
                 }
 
