@@ -24,12 +24,16 @@ class OnPlayerInteract : Listener {
 
         plant?.let {
             handlePlant(player, it, item)
+            event.isCancelled = true
             return
         }
 
-        val seedItem = plantManager.getRegisterPlantList().find { it.getSeedItem() == item }
-        seedItem?.let {
+        val newPlant = plantManager.getRegisterPlantList().find { it.getSeedItem().displayName() == item.displayName() }
+        newPlant?.let {
             plantManager.run { it.plant(block) }
+            item.amount -= 1
+            event.isCancelled = true
+            return
         }
     }
 
