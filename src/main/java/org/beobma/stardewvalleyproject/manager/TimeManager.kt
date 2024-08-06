@@ -2,6 +2,7 @@ package org.beobma.stardewvalleyproject.manager
 
 import org.beobma.stardewvalleyproject.StardewValley
 import org.beobma.stardewvalleyproject.manager.DefaultDataHandler.Companion.gameData
+import org.beobma.stardewvalleyproject.manager.Season.*
 import org.bukkit.Bukkit
 import org.bukkit.scheduler.BukkitRunnable
 import org.bukkit.scheduler.BukkitTask
@@ -64,12 +65,111 @@ class DefaultTimeHandler : TimeHandler {
                     dayEnd()
                 }
 
-                val minecraftTime = (gameData.hour * 1000) + ((gameData.minute / 60.0) * 1000).toInt()
+                val minecraftTime = when (gameData.season) {
+                    Spring -> when (gameData.hour) {
+                        6 -> 22917
+                        7 -> 23450
+                        8 -> 450
+                        9 -> 1000
+                        10 -> 2000
+                        11 -> 4000
+                        12 -> 6000
+                        13 -> 7700
+                        14 -> 8300
+                        15 -> 9000
+                        16 -> 10000
+                        17 -> 11500
+                        18 -> 12000
+                        19 -> 13050
+                        20 -> 13800
+                        21 -> 14500
+                        22 -> 15500
+                        23 -> 17000
+                        24 -> 18000
+                        1 -> 18000
+                        2 -> 18000
+                        else -> 18000
+                    }
+                    Summer -> when (gameData.hour) {
+                        6 -> 22917
+                        7 -> 23450
+                        8 -> 450
+                        9 -> 1000
+                        10 -> 2000
+                        11 -> 4000
+                        12 -> 6000
+                        13 -> 7700
+                        14 -> 8300
+                        15 -> 9000
+                        16 -> 10000
+                        17 -> 11500
+                        18 -> 12000
+                        19 -> 13050
+                        20 -> 13800
+                        21 -> 14500
+                        22 -> 15500
+                        23 -> 17000
+                        24 -> 18000
+                        1 -> 18000
+                        2 -> 18000
+                        else -> 18000
+                    }
+                    Autumn -> when (gameData.hour) {
+                        6 -> 23917
+                        7 -> 24450
+                        8 -> 1450
+                        9 -> 2000
+                        10 -> 3000
+                        11 -> 5000
+                        12 -> 7000
+                        13 -> 8700
+                        14 -> 9300
+                        15 -> 10000
+                        16 -> 11000
+                        17 -> 12500
+                        18 -> 13000
+                        19 -> 14050
+                        20 -> 14800
+                        21 -> 16500
+                        22 -> 16500
+                        23 -> 17000
+                        24 -> 17500
+                        1 -> 18000
+                        2 -> 18000
+                        else -> 18000
+                    }
+                    Winter -> when (gameData.hour) {
+                        6 -> 22350
+                        7 -> 22917
+                        8 -> 23450
+                        9 -> 450
+                        10 -> 1000
+                        11 -> 2000
+                        12 -> 4000
+                        13 -> 6000
+                        14 -> 7700
+                        15 -> 8300
+                        16 -> 9000
+                        17 -> 10000
+                        18 -> 11500
+                        19 -> 12000
+                        20 -> 13050
+                        21 -> 13800
+                        22 -> 14500
+                        23 -> 15500
+                        24 -> 17000
+                        1 -> 18000
+                        2 -> 18000
+                        else -> 18000
+                    }
+                }
+
                 val world = Bukkit.getWorld("world")
                 world?.time = minecraftTime.toLong()
             }
         }.runTaskTimer(StardewValley.instance, 0, 125)
     }
+
 
     private fun handlePlayerFaint() {
         logMessage("StardewValley Player Time Over")
@@ -90,6 +190,8 @@ class DefaultTimeHandler : TimeHandler {
 
         logMessage("StardewValley Day End")
         gameData.day++
+        gameData.hour = 6
+        gameData.minute = 0
         plantManager.run {
             gameData.plantList.forEach {
                 it.growth()
@@ -98,10 +200,10 @@ class DefaultTimeHandler : TimeHandler {
 
         if (gameData.day > 28) {
             gameData.season = when (gameData.season) {
-                Season.Spring -> Season.Summer
-                Season.Summer -> Season.Autumn
-                Season.Autumn -> Season.Winter
-                Season.Winter -> Season.Spring
+                Spring -> Summer
+                Summer -> Autumn
+                Autumn -> Winter
+                Winter -> Spring
             }
             gameData.day = 1
         }
