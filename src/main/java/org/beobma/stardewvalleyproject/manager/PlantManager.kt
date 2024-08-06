@@ -34,8 +34,9 @@ class DefaultPlantHanler : PlantHandler {
 
     override fun Plant.plant(block: Block) {
         if (!block.isSolid) return
-        isPlant = true
+        if (DefaultDataHandler.gameData.blockToPlantMap[block] is Plant) return
 
+        isPlant = true
         DefaultDataHandler.gameData.plantList.add(this@plant)
         DefaultDataHandler.gameData.blockToPlantMap[block] = this@plant
     }
