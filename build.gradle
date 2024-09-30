@@ -53,7 +53,7 @@ kotlin {
 
 shadowJar{
     archivesBaseName = 'StardewValleyProject'
-    destinationDirectory = file("C:\\Users\\ssdss\\OneDrive\\바탕 화면\\서버\\마인크래프트\\스타듀 밸리 프로젝트\\plugins")
+    destinationDirectory = file("C:\\Users\\user\\Desktop\\서버\\마인크래프트\\스타듀 밸리 프로젝트")
     manifest {
         attributes 'Main-Class': 'src/main/java/org/beobma/stardewvalleyproject/StardewValley.kt'
     }
