@@ -1,7 +1,7 @@
 package org.beobma.stardewvalleyproject.data
 
 import org.beobma.stardewvalleyproject.plant.Plant
-import org.beobma.stardewvalleyproject.manager.Season
+import org.beobma.stardewvalleyproject.util.Season
 import org.bukkit.block.Block
 import org.bukkit.entity.Player
 import java.io.Serializable

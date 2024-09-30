@@ -114,7 +114,8 @@ class DefaultPlantHanler : PlantHandler {
     }
 }
 
-class PlantManager(private val handler: PlantHandler) {
+object PlantManager {
+    private val handler: PlantHandler = DefaultPlantHanler()
 
     fun Plant.register() {
         handler.run { this@register.register() }

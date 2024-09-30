@@ -4,6 +4,7 @@ import com.google.gson.*
 import org.beobma.stardewvalleyproject.StardewValley
 import org.beobma.stardewvalleyproject.data.GameData
 import org.beobma.stardewvalleyproject.plant.Plant
+import org.beobma.stardewvalleyproject.util.Season
 import org.bukkit.Bukkit
 import org.bukkit.block.Block
 import java.io.File
@@ -23,7 +24,7 @@ class DefaultDataHandler : DataHandler {
     private val gson: Gson = GsonBuilder()
         .registerTypeAdapter(Plant::class.java, PlantAdapter())
         .registerTypeAdapter(Block::class.java, BlockTypeAdapter())
-        .enableComplexMapKeySerialization() // 복합 키 직렬화 활성화
+        .enableComplexMapKeySerialization()
         .setPrettyPrinting()
         .create()
 
@@ -110,7 +111,9 @@ class BlockTypeAdapter : JsonSerializer<Block>, JsonDeserializer<Block> {
 
 
 
-class DataManager(private val handler: DataHandler) {
+object DataManager {
+    private val handler: DataHandler = DefaultDataHandler()
+
     fun saveData() {
         handler.saveData()
     }
@@ -118,8 +121,4 @@ class DataManager(private val handler: DataHandler) {
     fun loadData() {
         handler.loadData()
     }
-}
-
-enum class Season {
-    Spring, Summer, Autumn, Winter
 }

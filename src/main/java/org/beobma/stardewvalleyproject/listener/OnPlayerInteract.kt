@@ -3,6 +3,10 @@ package org.beobma.stardewvalleyproject.listener
 import org.beobma.stardewvalleyproject.manager.DefaultDataHandler.Companion.gameData
 import org.beobma.stardewvalleyproject.manager.DefaultPlantHanler
 import org.beobma.stardewvalleyproject.manager.PlantManager
+import org.beobma.stardewvalleyproject.manager.PlantManager.getRegisterPlantList
+import org.beobma.stardewvalleyproject.manager.PlantManager.harvesting
+import org.beobma.stardewvalleyproject.manager.PlantManager.plant
+import org.beobma.stardewvalleyproject.manager.PlantManager.water
 import org.beobma.stardewvalleyproject.plant.Plant
 import org.beobma.stardewvalleyproject.tool.WateringCan
 import org.bukkit.entity.Player
@@ -12,7 +16,6 @@ import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.inventory.ItemStack
 
 class OnPlayerInteract : Listener {
-    private val plantManager = PlantManager(DefaultPlantHanler())
     private val wateringCan = WateringCan()
 
     @EventHandler
@@ -28,9 +31,9 @@ class OnPlayerInteract : Listener {
             return
         }
 
-        val newPlant = plantManager.getRegisterPlantList().find { it.getSeedItem().displayName() == item.displayName() }
+        val newPlant = getRegisterPlantList().find { it.getSeedItem().displayName() == item.displayName() }
         newPlant?.let {
-            plantManager.run { it.plant(block) }
+            it.plant(block)
             item.amount -= 1
             event.isCancelled = true
             return
@@ -39,12 +42,9 @@ class OnPlayerInteract : Listener {
 
     private fun handlePlant(player: Player, plant: Plant, item: ItemStack) {
         if (!plant.isPlant) return
-
-        plantManager.run {
-            when {
-                plant.isHarvestComplete -> plant.harvesting(player)
-                item.isWateringCan() && !plant.isWater -> plant.water()
-            }
+        when {
+            plant.isHarvestComplete -> plant.harvesting(player)
+            item.isWateringCan() && !plant.isWater -> plant.water()
         }
     }
 

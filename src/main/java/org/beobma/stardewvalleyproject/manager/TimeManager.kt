@@ -1,8 +1,10 @@
 package org.beobma.stardewvalleyproject.manager
 
 import org.beobma.stardewvalleyproject.StardewValley
+import org.beobma.stardewvalleyproject.manager.AbnormalStatusManager.faint
 import org.beobma.stardewvalleyproject.manager.DefaultDataHandler.Companion.gameData
-import org.beobma.stardewvalleyproject.manager.Season.*
+import org.beobma.stardewvalleyproject.manager.PlantManager.growth
+import org.beobma.stardewvalleyproject.util.Season
 import org.bukkit.Bukkit
 import org.bukkit.scheduler.BukkitRunnable
 import org.bukkit.scheduler.BukkitTask
@@ -41,6 +43,7 @@ class DefaultTimeHandler : TimeHandler {
         return gameData.season
     }
 
+
     private fun timeStop() {
         timeBukkitTask?.cancel()
         timeBukkitTask = null
@@ -66,7 +69,7 @@ class DefaultTimeHandler : TimeHandler {
                 }
 
                 val minecraftTime = when (gameData.season) {
-                    Spring -> when (gameData.hour) {
+                    Season.Spring -> when (gameData.hour) {
                         6 -> 22917
                         7 -> 23450
                         8 -> 450
@@ -90,7 +93,7 @@ class DefaultTimeHandler : TimeHandler {
                         2 -> 18000
                         else -> 18000
                     }
-                    Summer -> when (gameData.hour) {
+                    Season.Summer -> when (gameData.hour) {
                         6 -> 22917
                         7 -> 23450
                         8 -> 450
@@ -114,7 +117,7 @@ class DefaultTimeHandler : TimeHandler {
                         2 -> 18000
                         else -> 18000
                     }
-                    Autumn -> when (gameData.hour) {
+                    Season.Autumn -> when (gameData.hour) {
                         6 -> 23917
                         7 -> 24450
                         8 -> 1450
@@ -138,7 +141,7 @@ class DefaultTimeHandler : TimeHandler {
                         2 -> 18000
                         else -> 18000
                     }
-                    Winter -> when (gameData.hour) {
+                    Season.Winter -> when (gameData.hour) {
                         6 -> 22350
                         7 -> 22917
                         8 -> 23450
@@ -162,6 +165,30 @@ class DefaultTimeHandler : TimeHandler {
                         2 -> 18000
                         else -> 18000
                     }
+                    else -> when (gameData.hour) {
+                        6 -> 22917
+                        7 -> 23450
+                        8 -> 450
+                        9 -> 1000
+                        10 -> 2000
+                        11 -> 4000
+                        12 -> 6000
+                        13 -> 7700
+                        14 -> 8300
+                        15 -> 9000
+                        16 -> 10000
+                        17 -> 11500
+                        18 -> 12000
+                        19 -> 13050
+                        20 -> 13800
+                        21 -> 14500
+                        22 -> 15500
+                        23 -> 17000
+                        24 -> 18000
+                        1 -> 18000
+                        2 -> 18000
+                        else -> 18000
+                    }
                 }
 
                 val world = Bukkit.getWorld("world")
@@ -170,40 +197,34 @@ class DefaultTimeHandler : TimeHandler {
         }.runTaskTimer(StardewValley.instance, 0, 125)
     }
 
-
     private fun handlePlayerFaint() {
         logMessage("StardewValley Player Time Over")
         timeStop()
 
-        val abnormalStatusManager = AbnormalStatusManager(DefaultAbnormalStatusHandler())
-        abnormalStatusManager.run {
-            gameData.players.forEach {
-                it.faint()
-            }
+        gameData.players.forEach {
+            it.faint()
         }
 
         timePlay()
     }
 
     private fun dayEnd() {
-        val plantManager = PlantManager(DefaultPlantHanler())
-
         logMessage("StardewValley Day End")
+
         gameData.day++
         gameData.hour = 6
         gameData.minute = 0
-        plantManager.run {
-            gameData.plantList.forEach {
-                it.growth()
-            }
+        gameData.plantList.forEach {
+            it.growth()
         }
 
         if (gameData.day > 28) {
             gameData.season = when (gameData.season) {
-                Spring -> Summer
-                Summer -> Autumn
-                Autumn -> Winter
-                Winter -> Spring
+                Season.Spring -> Season.Summer
+                Season.Summer -> Season.Autumn
+                Season.Autumn -> Season.Winter
+                Season.Winter -> Season.Spring
+                else -> Season.Spring
             }
             gameData.day = 1
         }
@@ -215,7 +236,9 @@ class DefaultTimeHandler : TimeHandler {
     }
 }
 
-class TimeManager(private val handler: TimeHandler) {
+object TimeManager {
+    private val handler: TimeHandler = DefaultTimeHandler()
+
     fun timePlay() {
         handler.timePlay()
     }

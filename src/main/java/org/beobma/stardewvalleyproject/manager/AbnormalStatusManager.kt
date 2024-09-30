@@ -15,7 +15,8 @@ class DefaultAbnormalStatusHandler : AbnormalStatusHandler {
     }
 }
 
-class AbnormalStatusManager(private val handler: AbnormalStatusHandler) {
+object AbnormalStatusManager {
+    private val handler: AbnormalStatusHandler = DefaultAbnormalStatusHandler()
 
     fun Player.faint() {
         handler.run { this@faint.faint() }

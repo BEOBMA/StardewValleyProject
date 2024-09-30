@@ -12,7 +12,9 @@ class DefaultUtileHandler : UtilHandler {
     }
 }
 
-class UtilManager(private val handler: UtilHandler) {
+object UtilManager {
+    private val handler: UtilHandler = DefaultUtileHandler()
+
     fun isSingle(): Boolean {
         return gameData.players.size == 1
     }
