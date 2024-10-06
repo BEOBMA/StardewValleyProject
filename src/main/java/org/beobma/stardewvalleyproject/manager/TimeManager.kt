@@ -217,17 +217,6 @@ class DefaultTimeHandler : TimeHandler {
         gameData.plantList.forEach {
             it.growth()
         }
-
-        if (gameData.day > 28) {
-            gameData.season = when (gameData.season) {
-                Season.Spring -> Season.Summer
-                Season.Summer -> Season.Autumn
-                Season.Autumn -> Season.Winter
-                Season.Winter -> Season.Spring
-                else -> Season.Spring
-            }
-            gameData.day = 1
-        }
         handlePlayerFaint()
     }
 
