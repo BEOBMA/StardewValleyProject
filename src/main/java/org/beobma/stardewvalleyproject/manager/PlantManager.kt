@@ -47,6 +47,8 @@ class DefaultPlantHanler : PlantHandler {
         if (isHarvestComplete) return
         if (!isWater) return
 
+        // 작물 계절 일치 확인 필요
+
         val int = getCustomModelData(block!!)
 
         isWater = false
