@@ -1,6 +1,8 @@
 package org.beobma.stardewvalleyproject.manager
 
 import org.beobma.stardewvalleyproject.StardewValley
+import org.beobma.stardewvalleyproject.data.GameData
+import org.beobma.stardewvalleyproject.manager.DefaultDataHandler.Companion.gameData
 import org.beobma.stardewvalleyproject.plant.Plant
 import org.bukkit.block.Block
 import org.bukkit.entity.Player
@@ -46,6 +48,10 @@ class DefaultPlantHanler : PlantHandler {
         if (block !is Block) return
         if (isHarvestComplete) return
         if (!isWater) return
+
+        if (plantSeason != gameData.season) {
+            // 작물 계절 불일치로 시들어야 함.
+        }
 
         // 작물 계절 일치 확인 필요
 
