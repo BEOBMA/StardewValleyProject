@@ -1,10 +1,11 @@
 package org.beobma.stardewvalleyproject.plant
 
 import net.kyori.adventure.text.Component
+import org.beobma.stardewvalleyproject.util.Season
 import org.bukkit.Material
 import org.bukkit.inventory.ItemStack
 
-class WheatPlant : Plant("밀", 4, 1) {
+class WheatPlant : Plant("밀", 4, 1, Season.Spring) {
     override fun getSeedItem(): ItemStack {
         return ItemStack(Material.WHEAT_SEEDS, 1).apply {
             itemMeta = itemMeta.apply {
