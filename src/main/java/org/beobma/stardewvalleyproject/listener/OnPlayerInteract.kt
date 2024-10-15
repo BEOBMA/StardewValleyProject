@@ -1,8 +1,6 @@
 package org.beobma.stardewvalleyproject.listener
 
-import org.beobma.stardewvalleyproject.manager.DefaultDataHandler.Companion.gameData
-import org.beobma.stardewvalleyproject.manager.DefaultPlantHanler
-import org.beobma.stardewvalleyproject.manager.PlantManager
+import org.beobma.stardewvalleyproject.manager.DataManager.gameData
 import org.beobma.stardewvalleyproject.manager.PlantManager.getRegisterPlantList
 import org.beobma.stardewvalleyproject.manager.PlantManager.harvesting
 import org.beobma.stardewvalleyproject.manager.PlantManager.plant

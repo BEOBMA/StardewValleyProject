@@ -2,13 +2,9 @@ package org.beobma.stardewvalleyproject
 
 import org.beobma.stardewvalleyproject.config.PlantConfig
 import org.beobma.stardewvalleyproject.listener.*
-import org.beobma.stardewvalleyproject.manager.DataManager
+import org.beobma.stardewvalleyproject.manager.DataManager.gameData
 import org.beobma.stardewvalleyproject.manager.DataManager.loadData
 import org.beobma.stardewvalleyproject.manager.DataManager.saveData
-import org.beobma.stardewvalleyproject.manager.DefaultDataHandler
-import org.beobma.stardewvalleyproject.manager.DefaultDataHandler.Companion.gameData
-import org.beobma.stardewvalleyproject.manager.DefaultTimeHandler
-import org.beobma.stardewvalleyproject.manager.TimeManager
 import org.beobma.stardewvalleyproject.manager.TimeManager.timePause
 import org.bukkit.plugin.java.JavaPlugin
 

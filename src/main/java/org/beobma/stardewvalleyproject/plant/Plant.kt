@@ -10,7 +10,7 @@ abstract class Plant(
     val name: String,
     var harvestCycle: Int,
     val yield: Int,
-    val plantSeason: Season,
+    val plantSeasons: List<Season>,
 
     // 추가 변수가 필요할 수 있음
     // ex: 모델 데이터, 심을 수 있는 블록, 심어지는 방향 등...
