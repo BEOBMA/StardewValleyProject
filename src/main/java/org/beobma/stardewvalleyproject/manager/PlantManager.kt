@@ -1,8 +1,8 @@
 package org.beobma.stardewvalleyproject.manager
 
 import org.beobma.stardewvalleyproject.StardewValley
-import org.beobma.stardewvalleyproject.data.GameData
-import org.beobma.stardewvalleyproject.manager.DefaultDataHandler.Companion.gameData
+import org.beobma.stardewvalleyproject.manager.DataManager.gameData
+import org.beobma.stardewvalleyproject.plant.DeadGrassPlant
 import org.beobma.stardewvalleyproject.plant.Plant
 import org.bukkit.block.Block
 import org.bukkit.entity.Player
@@ -19,10 +19,8 @@ interface PlantHandler {
     fun Plant.harvesting(player: Player)
 }
 
-class DefaultPlantHanler : PlantHandler {
-    companion object {
-        private val registerPlantList: MutableList<Plant> = mutableListOf()
-    }
+object PlantManager : PlantHandler {
+    private val registerPlantList: MutableList<Plant> = mutableListOf()
 
     override fun Plant.register() {
         registerPlantList.add(this)
@@ -36,11 +34,11 @@ class DefaultPlantHanler : PlantHandler {
 
     override fun Plant.plant(block: Block) {
         if (!block.isSolid) return
-        if (DefaultDataHandler.gameData.blockToPlantMap[block] is Plant) return
+        if (gameData.blockToPlantMap[block] is Plant) return
 
         isPlant = true
-        DefaultDataHandler.gameData.plantList.add(this@plant)
-        DefaultDataHandler.gameData.blockToPlantMap[block] = this@plant
+        gameData.plantList.add(this@plant)
+        gameData.blockToPlantMap[block] = this@plant
     }
 
     override fun Plant.growth() {
@@ -49,8 +47,9 @@ class DefaultPlantHanler : PlantHandler {
         if (isHarvestComplete) return
         if (!isWater) return
 
-        if (plantSeason != gameData.season) {
-            // 작물 계절 불일치로 시들어야 함.
+        if (!plantSeasons.contains(gameData.season)) {
+            wither()
+            return
         }
 
         // 작물 계절 일치 확인 필요
@@ -86,8 +85,8 @@ class DefaultPlantHanler : PlantHandler {
         if (block !is Block) return
         if (!isHarvestComplete) return
 
-        DefaultDataHandler.gameData.plantList.remove(this@harvesting)
-        DefaultDataHandler.gameData.blockToPlantMap.remove(this@harvesting.block)
+        gameData.plantList.remove(this@harvesting)
+        gameData.blockToPlantMap.remove(this@harvesting.block)
 
         if (this.yield != 1) {
             val yield = Random.nextInt(1, this.yield + 1)
@@ -99,6 +98,12 @@ class DefaultPlantHanler : PlantHandler {
         }
 
         player.inventory.addItem(this.getHarvestItem())
+    }
+
+    private fun Plant.wither() {
+        val grass = DeadGrassPlant().apply {
+            this.block = this@wither.block
+        }
     }
 
     private fun getCustomModelData(block: Block): Int? {
@@ -119,33 +124,5 @@ class DefaultPlantHanler : PlantHandler {
 
     private fun logMessage(message: String) {
         StardewValley.instance.loggerMessage(message)
-    }
-}
-
-object PlantManager {
-    private val handler: PlantHandler = DefaultPlantHanler()
-
-    fun Plant.register() {
-        handler.run { this@register.register() }
-    }
-
-    fun getRegisterPlantList(): List<Plant> {
-        return handler.run { getRegisterPlantList() }
-    }
-
-    fun Plant.plant(block: Block) {
-        handler.run { this@plant.plant(block) }
-    }
-
-    fun Plant.growth() {
-        handler.run { this@growth.growth() }
-    }
-
-    fun Plant.water() {
-        handler.run { this@water.water() }
-    }
-
-    fun Plant.harvesting(player: Player) {
-        handler.run { this@harvesting.harvesting(player) }
     }
 }

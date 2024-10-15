@@ -19,7 +19,7 @@ interface DataHandler {
 }
 
 
-class DefaultDataHandler : DataHandler {
+object DataManager : DataHandler {
     private val folder: File = File(StardewValley.instance.dataFolder, "/data")
     private val gson: Gson = GsonBuilder()
         .registerTypeAdapter(Plant::class.java, PlantAdapter())
@@ -27,10 +27,7 @@ class DefaultDataHandler : DataHandler {
         .enableComplexMapKeySerialization()
         .setPrettyPrinting()
         .create()
-
-    companion object {
-        var gameData = GameData(6, 0, Season.Spring, 1, mutableListOf(), mutableListOf(), mutableMapOf())
-    }
+    var gameData = GameData(6, 0, Season.Spring, 1, mutableListOf(), mutableListOf(), mutableMapOf())
 
     override fun saveData() {
         logMessage("StardewValley Plugin Data Save")
@@ -106,19 +103,5 @@ class BlockTypeAdapter : JsonSerializer<Block>, JsonDeserializer<Block> {
         val y = parts[2].toIntOrNull() ?: throw JsonParseException("Invalid Y coordinate: ${parts[2]}")
         val z = parts[3].toIntOrNull() ?: throw JsonParseException("Invalid Z coordinate: ${parts[3]}")
         return world.getBlockAt(x, y, z)
-    }
-}
-
-
-
-object DataManager {
-    private val handler: DataHandler = DefaultDataHandler()
-
-    fun saveData() {
-        handler.saveData()
-    }
-
-    fun loadData() {
-        handler.loadData()
     }
 }

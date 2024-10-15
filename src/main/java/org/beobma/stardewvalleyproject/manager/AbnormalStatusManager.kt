@@ -7,18 +7,10 @@ interface AbnormalStatusHandler {
     fun Player.faint()
 }
 
-class DefaultAbnormalStatusHandler : AbnormalStatusHandler {
+object AbnormalStatusManager : AbnormalStatusHandler {
 
     override fun Player.faint() {
         StardewValley().loggerMessage("StardewValley ${this@faint} is Faint")
         //기절 시 효과
-    }
-}
-
-object AbnormalStatusManager {
-    private val handler: AbnormalStatusHandler = DefaultAbnormalStatusHandler()
-
-    fun Player.faint() {
-        handler.run { this@faint.faint() }
     }
 }

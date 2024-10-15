@@ -2,7 +2,7 @@ package org.beobma.stardewvalleyproject.manager
 
 import org.beobma.stardewvalleyproject.StardewValley
 import org.beobma.stardewvalleyproject.manager.AbnormalStatusManager.faint
-import org.beobma.stardewvalleyproject.manager.DefaultDataHandler.Companion.gameData
+import org.beobma.stardewvalleyproject.manager.DataManager.gameData
 import org.beobma.stardewvalleyproject.manager.PlantManager.growth
 import org.beobma.stardewvalleyproject.util.Season
 import org.bukkit.Bukkit
@@ -17,10 +17,8 @@ interface TimeHandler {
     fun getSeason(): Season
 }
 
-class DefaultTimeHandler : TimeHandler {
-    companion object {
-        private var timeBukkitTask: BukkitTask? = null
-    }
+object TimeManager : TimeHandler {
+    private var timeBukkitTask: BukkitTask? = null
 
     override fun timePlay() {
         startGameTime()
@@ -222,29 +220,5 @@ class DefaultTimeHandler : TimeHandler {
 
     private fun logMessage(message: String) {
         StardewValley.instance.loggerMessage(message)
-    }
-}
-
-object TimeManager {
-    private val handler: TimeHandler = DefaultTimeHandler()
-
-    fun timePlay() {
-        handler.timePlay()
-    }
-
-    fun timePause() {
-        handler.timePause()
-    }
-
-    fun getHour(): Int {
-        return handler.getHour()
-    }
-
-    fun getMinutes(): Int {
-        return handler.getMinutes()
-    }
-
-    fun getSeason(): Season {
-        return handler.getSeason()
     }
 }
