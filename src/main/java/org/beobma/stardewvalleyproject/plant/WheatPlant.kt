@@ -5,7 +5,7 @@ import org.beobma.stardewvalleyproject.util.Season
 import org.bukkit.Material
 import org.bukkit.inventory.ItemStack
 
-class WheatPlant : Plant("밀", 4, 1, listOf(Season.Spring)) {
+class WheatPlant : Plant("밀", 4, 8, listOf(Season.Summer, Season.Autumn)) {
     override fun getSeedItem(): ItemStack {
         return ItemStack(Material.WHEAT_SEEDS, 1).apply {
             itemMeta = itemMeta.apply {

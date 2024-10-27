@@ -5,13 +5,13 @@ import org.beobma.stardewvalleyproject.util.Season
 import org.bukkit.Material
 import org.bukkit.inventory.ItemStack
 
-class CabbagePlant : Plant("양배추", 5, 4, listOf(Season.Spring)) {
+class CranberryPlant : Plant("크랜베리", 6, 5, listOf(Season.Autumn)) {
     override fun getSeedItem(): ItemStack {
         return ItemStack(Material.WHEAT_SEEDS, 1).apply {
             itemMeta = itemMeta.apply {
-                displayName(Component.text("양배추 씨앗"))
+                displayName(Component.text("크랜베리 씨앗"))
                 lore(
-                    listOf(Component.text("성장하려면 5일이 소요됩니다."))
+                    listOf(Component.text("크랜베리 씨앗 설명"))
                 )
             }
         }
@@ -20,9 +20,9 @@ class CabbagePlant : Plant("양배추", 5, 4, listOf(Season.Spring)) {
     override fun getHarvestItem(): ItemStack {
         return ItemStack(Material.WHEAT, 1).apply {
             itemMeta = itemMeta.apply {
-                displayName(Component.text("양배추"))
+                displayName(Component.text("크랜베리"))
                 lore(
-                    listOf(Component.text("서양의 배추입니다. 영양소가 풍부합니다."))
+                    listOf(Component.text("크랜베리 설명"))
                 )
             }
         }
