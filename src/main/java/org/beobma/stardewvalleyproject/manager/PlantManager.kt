@@ -83,6 +83,11 @@ object PlantManager : PlantHandler {
     override fun Plant.harvesting(player: Player) {
         if (!this.isPlant) return
         if (block !is Block) return
+        // 죽은 풀 제거
+        if (this.name == DeadGrassPlant().name) {
+            gameData.plantList.remove(this@harvesting)
+            gameData.blockToPlantMap.remove(this@harvesting.block)
+        }
         if (!isHarvestComplete) return
 
         gameData.plantList.remove(this@harvesting)
@@ -101,9 +106,12 @@ object PlantManager : PlantHandler {
     }
 
     private fun Plant.wither() {
-        val grass = DeadGrassPlant().apply {
-            this.block = this@wither.block
-        }
+        val block = this.block ?: return
+
+        gameData.blockToPlantMap.remove(block)
+        gameData.plantList.remove(this)
+
+        DeadGrassPlant().plant(block)
     }
 
     private fun getCustomModelData(block: Block): Int? {
