@@ -87,6 +87,7 @@ object PlantManager : PlantHandler {
         if (this.name == DeadGrassPlant().name) {
             gameData.plantList.remove(this@harvesting)
             gameData.blockToPlantMap.remove(this@harvesting.block)
+            return
         }
         if (!isHarvestComplete) return
 
