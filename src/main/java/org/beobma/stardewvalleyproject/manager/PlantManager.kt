@@ -48,6 +48,7 @@ object PlantManager : PlantHandler {
         if (!isWater) return
 
         if (!plantSeasons.contains(gameData.season)) {
+            if (this.name == DeadGrassPlant().name) return
             wither()
             return
         }
@@ -108,11 +109,13 @@ object PlantManager : PlantHandler {
 
     private fun Plant.wither() {
         val block = this.block ?: return
+        val deadGrassPlant = DeadGrassPlant()
 
         gameData.blockToPlantMap.remove(block)
         gameData.plantList.remove(this)
 
-        DeadGrassPlant().plant(block)
+        deadGrassPlant.plant(block)
+        deadGrassPlant.isHarvestComplete = true
     }
 
     private fun getCustomModelData(block: Block): Int? {
