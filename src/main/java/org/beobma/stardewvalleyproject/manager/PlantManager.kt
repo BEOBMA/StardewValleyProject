@@ -4,6 +4,7 @@ import org.beobma.stardewvalleyproject.StardewValley
 import org.beobma.stardewvalleyproject.manager.DataManager.gameData
 import org.beobma.stardewvalleyproject.plant.DeadGrassPlant
 import org.beobma.stardewvalleyproject.plant.Plant
+import org.bukkit.Material
 import org.bukkit.block.Block
 import org.bukkit.entity.Player
 import org.bukkit.metadata.FixedMetadataValue
@@ -36,6 +37,11 @@ object PlantManager : PlantHandler {
         if (!block.isSolid) return
         if (gameData.blockToPlantMap[block] is Plant) return
 
+        // 15% 확률로 잡초 생성
+        if (Random.nextInt(100) < 15) {
+            isWeeds = true
+        }
+
         isPlant = true
         gameData.plantList.add(this@plant)
         gameData.blockToPlantMap[block] = this@plant
@@ -44,31 +50,55 @@ object PlantManager : PlantHandler {
     override fun Plant.growth() {
         if (!this.isPlant) return
         if (block !is Block) return
-        if (isHarvestComplete) return
-        if (!isWater) return
+        if (this == DeadGrassPlant()) return
 
+        val block = block ?: return
+
+        // 작물 죽음
         if (!plantSeasons.contains(gameData.season)) {
-            if (this.name == DeadGrassPlant().name) return
             wither()
             return
         }
 
-        // 작물 계절 일치 확인 필요
+        if (isHarvestComplete) return
+        if (!isWater) return
 
-        val int = getCustomModelData(block!!)
+        val world = block.world
+        val location = block.location
+        val locationX = location.x.toInt()
+        val locationY = location.y.toInt()
+        val locationZ = location.z.toInt()
+        for (x in (locationX - 1)..(locationX + 1)) {
+            for (z in (locationZ - 1)..(locationZ + 1)) {
+                val block = world.getBlockAt(x, locationY, z)
+
+                if (block.type != Material.FARMLAND) continue
+                val plant = gameData.blockToPlantMap[world.getBlockAt(x, locationY, z)] ?: continue
+
+                // 잡초 없음
+                if (!plant.isWeeds) {
+                    if (harvestCycle > 0) {
+                        harvestCycle -= 1
+                    }
+
+                    if (harvestCycle <= 0) {
+                        isHarvestComplete = true
+                    }
+                    weedsCount = 0
+                    continue
+                }
+
+                // 잡초 있음
+                weedsCount++
+
+                // 작물 죽음
+                if (weedsCount > 2) {
+                    wither()
+                }
+            }
+        }
 
         isWater = false
-        if (harvestCycle > 0) {
-            harvestCycle -= 1
-        }
-
-        if (harvestCycle <= 0) {
-            isHarvestComplete = true
-        }
-
-        if (int != null) {
-            setCustomModelData(block!!, harvestCycle)
-        }
     }
 
     override fun Plant.water() {
@@ -114,6 +144,7 @@ object PlantManager : PlantHandler {
         gameData.blockToPlantMap.remove(block)
         gameData.plantList.remove(this)
 
+        block.type = Material.DIRT
         deadGrassPlant.plant(block)
         deadGrassPlant.isHarvestComplete = true
     }
