@@ -27,7 +27,7 @@ object DataManager : DataHandler {
         .enableComplexMapKeySerialization()
         .setPrettyPrinting()
         .create()
-    var gameData = GameData(6, 0, Season.Spring, 1, mutableListOf(), mutableListOf(), mutableMapOf())
+    var gameData = GameData(6, 0, Season.Spring, 1, hashSetOf(), hashSetOf(), hashMapOf(), hashSetOf())
 
     override fun saveData() {
         logMessage("StardewValley Plugin Data Save")
@@ -59,7 +59,7 @@ object DataManager : DataHandler {
                         gameData = loadedData
                     } else {
                         logMessage("Loaded data is not valid, initializing with default values.")
-                        gameData = GameData(6, 0, Season.Spring, 1, mutableListOf(), mutableListOf(), mutableMapOf())
+                        gameData = GameData(6, 0, Season.Spring, 1, hashSetOf(), hashSetOf(), hashMapOf(), hashSetOf())
                     }
                 }
             }
