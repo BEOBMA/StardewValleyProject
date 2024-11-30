@@ -17,7 +17,9 @@ abstract class Plant(
     var isPlant: Boolean = false,
     var block: Block? = null,
     var isHarvestComplete: Boolean = false,
-    var isWater: Boolean = false
+    var isWater: Boolean = false,
+    var isWeeds: Boolean = false,
+    var weedsCount: Int = 0
 ) : Serializable {
     abstract fun getSeedItem(): ItemStack
     abstract fun getHarvestItem(): ItemStack
