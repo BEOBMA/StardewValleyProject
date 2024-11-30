@@ -14,8 +14,15 @@ class WateringCan {
             isUnbreakable = true
         }
     }
-
-    fun ItemStack.isWateringCan(): Boolean {
-        return this == WateringCan().wateringCan
+    private val pumpWateringCan = ItemStack(Material.PAPER, 1).apply {
+        itemMeta = itemMeta.apply {
+            displayName(Component.text("펌프형 물뿌리개"))
+            lore(
+                listOf(Component.text("심어진 작물에 우클릭 하면 물을 줄 수 있습니다."))
+            )
+            isUnbreakable = true
+        }
     }
+
+    val wateringCans = hashSetOf<ItemStack>(wateringCan, pumpWateringCan)
 }
