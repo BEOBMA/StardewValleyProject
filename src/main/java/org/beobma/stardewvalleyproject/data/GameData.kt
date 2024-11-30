@@ -11,7 +11,8 @@ data class GameData(
     var minute: Int,
     var season: Season,
     var day: Int,
-    val players: MutableList<Player>,
-    val plantList: MutableList<Plant>,
-    val blockToPlantMap: MutableMap<Block, Plant> = mutableMapOf()
+    val players: HashSet<Player>,
+    val plantList: HashSet<Plant>,
+    val blockToPlantMap: HashMap<Block, Plant> = hashMapOf(),
+    val interactionFarmlands: HashSet<Block> = hashSetOf()
 ) : Serializable
