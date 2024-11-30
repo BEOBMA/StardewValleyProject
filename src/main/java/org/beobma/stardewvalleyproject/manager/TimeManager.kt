@@ -4,8 +4,13 @@ import org.beobma.stardewvalleyproject.StardewValley
 import org.beobma.stardewvalleyproject.manager.AbnormalStatusManager.faint
 import org.beobma.stardewvalleyproject.manager.DataManager.gameData
 import org.beobma.stardewvalleyproject.manager.PlantManager.growth
+import org.beobma.stardewvalleyproject.plant.DeadGrassPlant
+import org.beobma.stardewvalleyproject.plant.Plant
 import org.beobma.stardewvalleyproject.util.Season
 import org.bukkit.Bukkit
+import org.bukkit.Material
+import org.bukkit.block.Block
+import org.bukkit.block.data.type.Farmland
 import org.bukkit.scheduler.BukkitRunnable
 import org.bukkit.scheduler.BukkitTask
 
@@ -215,6 +220,23 @@ object TimeManager : TimeHandler {
         gameData.plantList.forEach {
             it.growth()
         }
+        val dirts = hashSetOf<Block>()
+        gameData.interactionFarmlands.forEach { block ->
+            val farmland = block as? Farmland ?: return@forEach
+
+            // 죽은 풀
+            if (gameData.blockToPlantMap[block] == DeadGrassPlant()) return
+
+            // 작물 없음 + 물 안줌
+            if (gameData.blockToPlantMap[block] !is Plant && farmland.moisture != farmland.maximumMoisture) {
+                block.type = Material.DIRT
+                dirts.add(block)
+                return@forEach
+            }
+            // 작물 있음
+            farmland.moisture = 0
+        }
+        gameData.interactionFarmlands.removeAll(dirts)
         handlePlayerFaint()
     }
 
