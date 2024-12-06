@@ -4,7 +4,7 @@ import org.beobma.stardewvalleyproject.StardewValley
 import org.beobma.stardewvalleyproject.manager.AbnormalStatusManager.faint
 import org.beobma.stardewvalleyproject.manager.DataManager.gameData
 import org.beobma.stardewvalleyproject.manager.PlantManager.growth
-import org.beobma.stardewvalleyproject.plant.DeadGrassPlant
+import org.beobma.stardewvalleyproject.plant.list.DeadGrassPlant
 import org.beobma.stardewvalleyproject.plant.Plant
 import org.beobma.stardewvalleyproject.util.Season
 import org.bukkit.Bukkit

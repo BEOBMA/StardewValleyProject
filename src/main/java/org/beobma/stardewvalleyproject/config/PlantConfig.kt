@@ -1,16 +1,16 @@
 package org.beobma.stardewvalleyproject.config
 
 import org.beobma.stardewvalleyproject.manager.PlantManager.register
-import org.beobma.stardewvalleyproject.plant.BitPlant
-import org.beobma.stardewvalleyproject.plant.CabbagePlant
-import org.beobma.stardewvalleyproject.plant.CoffeeBeansPlant
-import org.beobma.stardewvalleyproject.plant.CornerPlant
-import org.beobma.stardewvalleyproject.plant.CranberryPlant
-import org.beobma.stardewvalleyproject.plant.CucumberPlant
-import org.beobma.stardewvalleyproject.plant.PotatoPlant
-import org.beobma.stardewvalleyproject.plant.PumpkinPlant
-import org.beobma.stardewvalleyproject.plant.TomatoPlant
-import org.beobma.stardewvalleyproject.plant.WheatPlant
+import org.beobma.stardewvalleyproject.plant.list.BitPlant
+import org.beobma.stardewvalleyproject.plant.list.CabbagePlant
+import org.beobma.stardewvalleyproject.plant.list.CoffeeBeansPlant
+import org.beobma.stardewvalleyproject.plant.list.CornerPlant
+import org.beobma.stardewvalleyproject.plant.list.CranberryPlant
+import org.beobma.stardewvalleyproject.plant.list.CucumberPlant
+import org.beobma.stardewvalleyproject.plant.list.PotatoPlant
+import org.beobma.stardewvalleyproject.plant.list.PumpkinPlant
+import org.beobma.stardewvalleyproject.plant.list.TomatoPlant
+import org.beobma.stardewvalleyproject.plant.list.WheatPlant
 
 class PlantConfig {
     init {

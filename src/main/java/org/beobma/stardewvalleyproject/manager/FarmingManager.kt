@@ -1,7 +1,7 @@
 package org.beobma.stardewvalleyproject.manager
 
 import org.beobma.stardewvalleyproject.manager.DataManager.gameData
-import org.beobma.stardewvalleyproject.plant.DeadGrassPlant
+import org.beobma.stardewvalleyproject.plant.list.DeadGrassPlant
 import org.beobma.stardewvalleyproject.plant.Plant
 import org.beobma.stardewvalleyproject.tool.Capsule
 import org.beobma.stardewvalleyproject.tool.Hoe
