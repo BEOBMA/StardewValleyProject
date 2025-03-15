@@ -1,8 +1,10 @@
 package org.beobma.stardewvalleyproject.plant
 
 
+import org.beobma.stardewvalleyproject.tool.CapsuleType
 import org.beobma.stardewvalleyproject.util.Season
 import org.bukkit.block.Block
+import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
 import java.io.Serializable
 
@@ -18,8 +20,10 @@ abstract class Plant(
     var block: Block? = null,
     var isHarvestComplete: Boolean = false,
     var isWeeds: Boolean = false,
-    var weedsCount: Int = 0
+    var weedsCount: Int = 0,
+    var capsuleType: CapsuleType = CapsuleType.None,
 ) : Serializable {
     abstract fun getSeedItem(): ItemStack
     abstract fun getHarvestItem(): ItemStack
+    abstract fun copy(): Plant
 }

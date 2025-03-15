@@ -1,6 +1,7 @@
 package org.beobma.stardewvalleyproject
 
-import org.beobma.stardewvalleyproject.config.PlantConfig
+import com.comphenix.protocol.ProtocolLibrary
+import com.comphenix.protocol.ProtocolManager
 import org.beobma.stardewvalleyproject.listener.*
 import org.beobma.stardewvalleyproject.manager.DataManager.gameData
 import org.beobma.stardewvalleyproject.manager.DataManager.loadData
@@ -12,12 +13,13 @@ class StardewValley : JavaPlugin() {
 
     companion object {
         lateinit var instance: StardewValley
+        lateinit var protocolManager: ProtocolManager
     }
 
     override fun onEnable() {
         instance = this
+        protocolManager = ProtocolLibrary.getProtocolManager();
         registerEvents()
-        pluginConfig()
         loadData()
 
         loggerMessage("StardewValley Plugin Enable")
@@ -29,11 +31,6 @@ class StardewValley : JavaPlugin() {
         saveData()
 
         loggerMessage("StardewValley Plugin Disable")
-    }
-
-
-    private fun pluginConfig() {
-        PlantConfig()
     }
 
     private fun registerEvents() {

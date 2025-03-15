@@ -15,4 +15,8 @@ class DeadGrassPlant : Plant("죽은 풀", 999999, 1, listOf(Season.Spring, Seas
     override fun getHarvestItem(): ItemStack {
         return ItemStack(Material.AIR, 1)
     }
+
+    override fun copy(): Plant {
+        return DeadGrassPlant()
+    }
 }

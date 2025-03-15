@@ -10,7 +10,7 @@ interface AbnormalStatusHandler {
 object AbnormalStatusManager : AbnormalStatusHandler {
 
     override fun Player.faint() {
-        StardewValley().loggerMessage("StardewValley ${this@faint} is Faint")
+        StardewValley.instance.loggerMessage("StardewValley ${this@faint} is Faint")
         //기절 시 효과
     }
 }

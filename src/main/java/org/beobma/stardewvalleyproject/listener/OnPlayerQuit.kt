@@ -12,6 +12,13 @@ class OnPlayerQuit : Listener {
         val player = event.player
 
         gameData.players.remove(player)
+        gameData.mines.forEach { mine ->
+            mine.players.forEach { player ->
+                // 동굴 퇴장
+                // player.teleport()
+            }
+            mine.players.clear()
+        }
         if (gameData.players.isEmpty()) {
             timePause()
         }

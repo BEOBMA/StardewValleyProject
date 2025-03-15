@@ -5,6 +5,17 @@ import org.bukkit.Material
 import org.bukkit.inventory.ItemStack
 
 class Capsule {
+    val capsuleGun = ItemStack(Material.PAPER, 1).apply {
+        itemMeta = itemMeta.apply {
+            displayName(MiniMessage.miniMessage().deserialize("캡슐건"))
+            lore(
+                listOf(
+                    MiniMessage.miniMessage().deserialize("<gray>왼손에 든 캡슐을 소모하여 작물에 사용한다. 한 작물에 여러 캡슐을 사용할 수는 없다.")
+                )
+            )
+        }
+    }
+
     val weedKillerCapsule = ItemStack(Material.PAPER, 1).apply {
         itemMeta = itemMeta.apply {
             displayName(MiniMessage.miniMessage().deserialize("제초 캡슐"))
@@ -32,5 +43,5 @@ class Capsule {
         }
     }
 
-    val capsules = hashSetOf<ItemStack>(weedKillerCapsule, nutrientCapsule, weedKillerCapsule)
+    val capsules = hashSetOf<ItemStack>(weedKillerCapsule, nutrientCapsule, growthCapsule)
 }

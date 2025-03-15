@@ -1,16 +1,21 @@
 package org.beobma.stardewvalleyproject.manager
 
 import com.google.gson.*
+import com.google.gson.reflect.TypeToken
 import org.beobma.stardewvalleyproject.StardewValley
 import org.beobma.stardewvalleyproject.data.GameData
+import org.beobma.stardewvalleyproject.mine.Mine
+import org.beobma.stardewvalleyproject.mine.MineTemplate
+import org.beobma.stardewvalleyproject.mine.MineType
 import org.beobma.stardewvalleyproject.plant.Plant
+import org.beobma.stardewvalleyproject.plant.list.DeadGrassPlant
+import org.beobma.stardewvalleyproject.resource.Resource
 import org.beobma.stardewvalleyproject.util.Season
 import org.bukkit.Bukkit
 import org.bukkit.block.Block
+import org.bukkit.entity.Entity
+import org.bukkit.entity.Player
 import java.io.File
-import java.io.FileReader
-import java.io.FileWriter
-import java.io.IOException
 import java.lang.reflect.Type
 
 interface DataHandler {
@@ -18,56 +23,69 @@ interface DataHandler {
     fun loadData()
 }
 
-
 object DataManager : DataHandler {
-    private val folder: File = File(StardewValley.instance.dataFolder, "/data")
+    private val folder = File(StardewValley.instance.dataFolder, "data")
+    private val dataFile get() = File(folder, "data.json")
     private val gson: Gson = GsonBuilder()
         .registerTypeAdapter(Plant::class.java, PlantAdapter())
         .registerTypeAdapter(Block::class.java, BlockTypeAdapter())
+        .registerTypeAdapter(Mine::class.java, MineTypeAdapter())
         .enableComplexMapKeySerialization()
         .setPrettyPrinting()
         .create()
-    var gameData = GameData(6, 0, Season.Spring, 1, hashSetOf(), hashSetOf(), hashMapOf(), hashSetOf())
+
+    var gameData = GameData(
+        hour = 6,
+        minute = 0,
+        season = Season.Spring,
+        day = 1,
+        players = hashSetOf(),
+        plantList = mutableListOf(),
+        blockToPlantMap = mutableMapOf(),
+        interactionFarmlands = hashSetOf(),
+        mines = mutableListOf()
+    )
 
     override fun saveData() {
         logMessage("StardewValley Plugin Data Save")
         try {
-            if (!folder.exists()) {
-                folder.mkdirs()
-            }
-            val dataFile = File(folder, "data.json")
-            FileWriter(dataFile).use { writer ->
-                writer.write(gson.toJson(gameData))
-            }
-        } catch (e: IOException) {
+            if (!folder.exists()) folder.mkdirs()
+            dataFile.writeText(gson.toJson(gameData))
+        } catch (e: Exception) {
             logMessage("Failed to save data: ${e.message}")
         }
     }
 
     override fun loadData() {
         logMessage("StardewValley Plugin Data Load")
-        if (!folder.exists()) {
-            folder.mkdirs()
-            return
-        }
         try {
-            val dataFile = File(folder, "data.json")
+            if (!folder.exists()) folder.mkdirs()
             if (dataFile.exists()) {
-                FileReader(dataFile).use { reader ->
-                    val loadedData = gson.fromJson(reader, GameData::class.java)
-                    if (loadedData is GameData) {
-                        gameData = loadedData
-                    } else {
-                        logMessage("Loaded data is not valid, initializing with default values.")
-                        gameData = GameData(6, 0, Season.Spring, 1, hashSetOf(), hashSetOf(), hashMapOf(), hashSetOf())
-                    }
-                }
+                val json = dataFile.readText()
+                val loadedData = gson.fromJson(json, GameData::class.java)
+                gameData = loadedData
+            } else {
+                logMessage("Data file not found, initializing default values.")
+                createDefaultGameData()
             }
-        } catch (e: IOException) {
-            logMessage("Failed to load data: ${e.message}")
         } catch (e: Exception) {
             logMessage("Failed to load data: ${e.message}")
+            createDefaultGameData()
         }
+    }
+
+    private fun createDefaultGameData() {
+        gameData = GameData(
+            hour = 6,
+            minute = 0,
+            season = Season.Spring,
+            day = 1,
+            players = hashSetOf(),
+            plantList = mutableListOf(),
+            blockToPlantMap = mutableMapOf(),
+            interactionFarmlands = hashSetOf(),
+            mines = mutableListOf()
+        )
     }
 
     private fun logMessage(message: String) {
@@ -77,16 +95,35 @@ object DataManager : DataHandler {
 
 class PlantAdapter : JsonSerializer<Plant>, JsonDeserializer<Plant> {
     override fun serialize(src: Plant, typeOfSrc: Type, context: JsonSerializationContext): JsonElement {
-        val jsonObject = JsonObject()
-        jsonObject.addProperty("type", src::class.java.name)
-        jsonObject.add("properties", context.serialize(src))
-        return jsonObject
+        val properties = JsonObject().apply {
+            addProperty("name", src.name)
+            addProperty("harvestCycle", src.harvestCycle)
+            addProperty("yield", src.yield)
+            add("plantSeasons", context.serialize(src.plantSeasons))
+            addProperty("isPlant", src.isPlant)
+            if (src.block != null) {
+                add("block", context.serialize(src.block, Block::class.java))
+            } else {
+                add("block", JsonNull.INSTANCE)
+            }
+            addProperty("isHarvestComplete", src.isHarvestComplete)
+            addProperty("isWeeds", src.isWeeds)
+            addProperty("weedsCount", src.weedsCount)
+            add("capsuleType", context.serialize(src.capsuleType))
+        }
+        return JsonObject().apply {
+            addProperty("type", src::class.java.name)
+            add("properties", properties)
+        }
     }
 
+    @Suppress("UNCHECKED_CAST")
     override fun deserialize(json: JsonElement, typeOfT: Type, context: JsonDeserializationContext): Plant {
-        val jsonObject = json.asJsonObject
-        val type = Class.forName(jsonObject.get("type").asString)
-        return context.deserialize(jsonObject.get("properties"), type)
+        val wrapperObj = json.asJsonObject
+        val className = wrapperObj.get("type").asString
+        val properties = wrapperObj.getAsJsonObject("properties")
+        val clazz = Class.forName(className) as? Class<Plant> ?: return DeadGrassPlant()
+        return context.deserialize(properties, clazz)
     }
 }
 
@@ -103,5 +140,37 @@ class BlockTypeAdapter : JsonSerializer<Block>, JsonDeserializer<Block> {
         val y = parts[2].toIntOrNull() ?: throw JsonParseException("Invalid Y coordinate: ${parts[2]}")
         val z = parts[3].toIntOrNull() ?: throw JsonParseException("Invalid Z coordinate: ${parts[3]}")
         return world.getBlockAt(x, y, z)
+    }
+}
+
+class MineTypeAdapter : JsonSerializer<Mine>, JsonDeserializer<Mine> {
+    override fun serialize(src: Mine, typeOfSrc: Type, context: JsonSerializationContext): JsonElement {
+        return JsonObject().apply {
+            addProperty("floor", src.floor)
+            addProperty("mineTemplate", src.mineTemplate.name)
+            addProperty("mineType", src.mineType.name)
+            add("resources", context.serialize(src.resources))
+            add("players", context.serialize(src.players))
+            add("enemys", context.serialize(src.enemys))
+        }
+    }
+
+    override fun deserialize(json: JsonElement, typeOfT: Type, context: JsonDeserializationContext): Mine {
+        val jsonObject = json.asJsonObject
+        val floor = jsonObject.get("floor").asInt
+        val mineTemplateName = jsonObject.get("mineTemplate").asString
+        val mineTypeName = jsonObject.get("mineType").asString
+        val mineTemplate = MineTemplate.entries.find { it.name == mineTemplateName }
+            ?: throw JsonParseException("MineTemplate not found: $mineTemplateName")
+        val mineType = MineType.entries.find { it.name == mineTypeName }
+            ?: throw JsonParseException("MineType not found: $mineTypeName")
+
+        val resourcesType = object : TypeToken<MutableList<Resource>>() {}.type
+        val resources: MutableList<Resource> = context.deserialize(jsonObject.get("resources"), resourcesType)
+        val playersType = object : TypeToken<MutableList<Player>>() {}.type
+        val players: MutableList<Player> = context.deserialize(jsonObject.get("players"), playersType)
+        val enemyType = object : TypeToken<MutableList<Entity>>() {}.type
+        val enemys: MutableList<Entity> = context.deserialize(jsonObject.get("enemys"), enemyType)
+        return Mine(floor, mineTemplate, mineType, resources, enemys, players)
     }
 }
