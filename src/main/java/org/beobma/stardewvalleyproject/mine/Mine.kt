@@ -1,19 +1,22 @@
 package org.beobma.stardewvalleyproject.mine
 
+import kotlinx.serialization.Serializable
+import org.beobma.stardewvalleyproject.data.LocationSerializer
+import org.beobma.stardewvalleyproject.entity.Enemy
 import org.beobma.stardewvalleyproject.resource.Resource
 import org.bukkit.Location
-import org.bukkit.block.Block
-import org.bukkit.entity.Entity
 import org.bukkit.entity.Player
 
+@Serializable
 data class Mine(
     val floor: Int,
     val mineTemplate: MineTemplate,
     val mineType: MineType,
-    val startLocation: Location,
     val resources: MutableList<Resource> = mutableListOf(),
-    val enemys: MutableList<Entity> = mutableListOf(),
+    val enemys: MutableList<Enemy> = mutableListOf(),
     val players: MutableList<Player> = mutableListOf(),
-    var startBlock: Block? = null,
-    var exitBlock: Block? = null,
+    @Serializable(with = LocationSerializer::class)
+    var startBlockLocation: Location? = null,
+    @Serializable(with = LocationSerializer::class)
+    var exitBlockLocation: Location? = null,
 )

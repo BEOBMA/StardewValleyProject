@@ -1,302 +1,372 @@
 package org.beobma.stardewvalleyproject.manager
 
+import net.kyori.adventure.text.minimessage.MiniMessage
+import org.beobma.stardewvalleyproject.StardewValley
+import org.beobma.stardewvalleyproject.entity.Enemy
+import org.beobma.stardewvalleyproject.manager.CustomModelDataManager.getCustomModelData
 import org.beobma.stardewvalleyproject.manager.DataManager.gameData
+import org.beobma.stardewvalleyproject.manager.DataManager.mines
+import org.beobma.stardewvalleyproject.manager.ToolManager.HEAVYDRILL_MODEL_DATA
+import org.beobma.stardewvalleyproject.manager.ToolManager.LIGHTDRILL_MODEL_DATA
+import org.beobma.stardewvalleyproject.manager.ToolManager.PICKAXE_MODEL_DATA
+import org.beobma.stardewvalleyproject.manager.ToolManager.PICKAXE_MODEL_DATAS
+import org.beobma.stardewvalleyproject.manager.ToolManager.decreaseCustomDurability
 import org.beobma.stardewvalleyproject.mine.Mine
 import org.beobma.stardewvalleyproject.mine.MineTemplate
 import org.beobma.stardewvalleyproject.mine.MineType
 import org.beobma.stardewvalleyproject.resource.Resource
 import org.beobma.stardewvalleyproject.resource.ResourceType
-import org.bukkit.Bukkit
-import org.bukkit.Location
-import org.bukkit.Material
+import org.beobma.stardewvalleyproject.resource.ResourceType.*
+import org.bukkit.*
 import org.bukkit.block.Block
+import org.bukkit.entity.EntityType
+import org.bukkit.entity.ItemDisplay
 import org.bukkit.entity.Player
-import kotlin.math.min
+import org.bukkit.inventory.ItemStack
+import org.bukkit.metadata.FixedMetadataValue
+import java.util.*
+import kotlin.math.ceil
 import kotlin.random.Random
 
-interface MineHandler {
-    fun reset()
-    fun Player.approach(currentMine: Mine?, floor: Int)
-    fun Player.gathering(resources: Resource)
-}
+object MineManager {
+    private const val MAX_MINE_FLOOR = 60
+    private const val CALCULATE_OFFSET = 58.0
+    private const  val TICKINTERVAL = 10L
 
-object MineManager : MineHandler {
-    override fun reset() {
-        // 하루가 넘어가거나, 기타 이유로 광산 내부를 리셋해야할 경우
-        gameData.mines.clear()
+    private val world = Bukkit.getWorlds().first()
+    private val miniMessage = MiniMessage.miniMessage()
 
-        val mines = HashSet<Mine>()
-        val world = Bukkit.getWorlds().first()
+    val gatheringPlayers = mutableSetOf<UUID>()
 
-        for (i in 1..60) {
-            val templates = arrayOf(MineTemplate.M, MineTemplate.N, MineTemplate.R)
-            val types = arrayOf(MineType.A, MineType.B, MineType.C, MineType.D, MineType.E)
-            val mineTemplate = templates[(i - 1) / 5 % templates.size]
-            val mineType = types[(i - 1) % types.size]
-            val xInterpolation = ((i / 15).toInt() + 1) * 174
-            val startLocation = Location(world, mineTemplate.x + xInterpolation + mineType.xInterpolation, mineTemplate.y + mineType.yInterpolation, mineTemplate.z + mineType.zInterpolation)
-            val mine = Mine(i, mineTemplate, mineType, startLocation)
-            mine.startBlock = startLocation.add(0.0, -1.0, 0.0).block
-            mine.startBlock?.type = Material.GOLD_BLOCK // 타입 수정
-            mine.addResource()
-            mine.enemySummoning()
-            mines.add(mine)
+    fun reset() {
+        if (mines.isNotEmpty()) {
+            loadData()
+            return
         }
-        gameData.mines.addAll(mines)
+        mines.forEach { mine ->
+            mine.resources.forEach { resource ->
+                val itemDisplay = resource.getItemDisplay() ?: return@forEach
+                itemDisplay.remove()
+            }
+        }
+        mines.clear()
+        mines.addAll(generateMines())
+    }
+
+    fun nextDay() {
+        mines.forEach { mine ->
+            mine.resources.forEach { resource ->
+                val itemDisplay = resource.getItemDisplay() ?: return@forEach
+                itemDisplay.remove()
+            }
+        }
+        mines.clear()
+        mines.addAll(generateMines(true))
+    }
+
+    fun loadData() {
+        mines.forEach { mine ->
+            mine.startBlockLocation?.block?.type = Material.GOLD_BLOCK
+            mine.exitBlockLocation?.block?.type = Material.COPPER_BLOCK
+        }
+    }
+
+    fun Player.approach(currentMine: Mine?, floor: Int) {
+        if (floor == 0) {
+            currentMine?.let { leaveMine(it) }
+            teleport(Location(world, -191.0, -56.0, 95.0))
+            return
+        }
+
+        val nextMine = mines.find { it.floor == floor } ?: return
+        currentMine?.let { leaveMine(it) }
+
+        nextMine.players.add(this)
+        teleport(nextMine.startBlockLocation?.clone()?.add(0.0, 1.0, 0.0) ?: return)
+        nextMine.spawnEnemys()
+    }
+
+
+    private fun calculateOffset(floor: Int): Double = ((floor - 1) / 5) * CALCULATE_OFFSET
+
+    private fun generateMines(useTemplateOffset: Boolean = false): List<Mine> {
+        val templates = arrayOf(MineTemplate.M, MineTemplate.N, MineTemplate.R)
+        val types = arrayOf(MineType.A, MineType.B, MineType.C, MineType.D, MineType.E)
+
+        return (1..MAX_MINE_FLOOR).map { floor ->
+            val template = templates[(floor - 1) / 5 % templates.size]
+            val type = types[(floor - 1) % types.size]
+            val xOffset = calculateOffset(floor)
+
+            val mine = Mine(floor, template, type).apply {
+                val startX = if (useTemplateOffset) template.x + type.xInterpolation else type.startX
+                val startY = if (useTemplateOffset) template.y + type.yInterpolation else type.startY - 1.0
+                val startZ = if (useTemplateOffset) template.z + type.zInterpolation else type.startZ
+
+                startBlockLocation = Location(world, startX + xOffset, startY, startZ)
+                startBlockLocation?.block?.type = Material.GOLD_BLOCK
+                addResource()
+                addEnemyData()
+            }
+            mine
+        }
     }
 
     private fun Mine.addResource() {
-        when (floor) {
-            in 1..8 -> {
-                mineType.resourcesLocations.forEach { location ->
-                    val randomInt = Random.nextInt(0, 3)
+        val xOffset = calculateOffset(floor)
+        mineType.resourcesLocations.forEach { (x, y, z) ->
+            val location = Location(world, x + xOffset, y, z)
+            val type = getRandomForFloor(floor)
+            summoningResource(Resource(type, location))
+        }
+    }
 
-                    when (randomInt) {
-                        1 -> {
-                            val resource = Resource(ResourceType.Magnesium, location)
-                            summoningResource(resource)
-                        }
-                        else -> {
-                            val resource = Resource(ResourceType.Aluminum, location)
-                            summoningResource(resource)
-                        }
-                    }
-                }
-            }
-            in 9..16 -> {
-                mineType.resourcesLocations.forEach { location ->
-                    val randomInt = Random.nextInt(0, 11)
+    private fun getRandomForFloor(floor: Int): ResourceType {
+        val r = Random.nextInt(0, 101)
+        return when (floor) {
+            in 1..8 -> if (r < 33) Magnesium else Aluminum
 
-                    when (randomInt) {
-                        in 1..3 -> {
-                            val resource = Resource(ResourceType.Magnesium, location)
-                            summoningResource(resource)
-                        }
-                        in 4..6 -> {
-                            val resource = Resource(ResourceType.Aluminum, location)
-                            summoningResource(resource)
-                        }
-                        else -> {
-                            val resource = Resource(ResourceType.Iron, location)
-                            summoningResource(resource)
-                        }
-                    }
-                }
+            in 9..16 -> when (r) {
+                in 0..30 -> Magnesium
+                in 31..60 -> Aluminum
+                else -> Iron
             }
-            in 17..24 -> {
-                mineType.resourcesLocations.forEach { location ->
-                    val randomInt = Random.nextInt(0, 11)
 
-                    when (randomInt) {
-                        in 1..2 -> {
-                            val resource = Resource(ResourceType.Magnesium, location)
-                            summoningResource(resource)
-                        }
-                        in 3..4 -> {
-                            val resource = Resource(ResourceType.Aluminum, location)
-                            summoningResource(resource)
-                        }
-                        in 5..7 -> {
-                            val resource = Resource(ResourceType.Iron, location)
-                            summoningResource(resource)
-                        }
-                        else -> {
-                            val resource = Resource(ResourceType.Copper, location)
-                            summoningResource(resource)
-                        }
-                    }
-                }
+            in 17..24 -> when (r) {
+                in 0..20 -> Magnesium
+                in 21..40 -> Aluminum
+                in 41..70 -> Iron
+                else -> Copper
             }
-            in 25..32 -> {
-                mineType.resourcesLocations.forEach { location ->
-                    val randomInt = Random.nextInt(0, 11)
 
-                    when (randomInt) {
-                        1 -> {
-                            val resource = Resource(ResourceType.Magnesium, location)
-                            summoningResource(resource)
-                        }
-                        2 -> {
-                            val resource = Resource(ResourceType.Aluminum, location)
-                            summoningResource(resource)
-                        }
-                        in 3..4 -> {
-                            val resource = Resource(ResourceType.Iron, location)
-                            summoningResource(resource)
-                        }
-                        in 5..6 -> {
-                            val resource = Resource(ResourceType.Copper, location)
-                            summoningResource(resource)
-                        }
-                        else -> {
-                            val resource = Resource(ResourceType.Lithium, location)
-                            summoningResource(resource)
-                        }
-                    }
-                }
+            in 25..32 -> when (r) {
+                0 -> Magnesium
+                1 -> Aluminum
+                in 2..30 -> Iron
+                in 31..50 -> Copper
+                else -> Lithium
             }
-            in 33..40 -> {
-                mineType.resourcesLocations.forEach { location ->
-                    val randomInt = Random.nextInt(0, 11)
 
-                    when (randomInt) {
-                        in 1..3 -> {
-                            val resource = Resource(ResourceType.Iron, location)
-                            summoningResource(resource)
-                        }
-                        in 4..6 -> {
-                            val resource = Resource(ResourceType.Copper, location)
-                            summoningResource(resource)
-                        }
-                        else -> {
-                            val resource = Resource(ResourceType.Lithium, location)
-                            summoningResource(resource)
-                        }
-                    }
-                }
+            in 33..40 -> when (r) {
+                in 0..30 -> Iron
+                in 31..60 -> Copper
+                else -> Lithium
             }
-            in 41..46 -> {
-                mineType.resourcesLocations.forEach { location ->
-                    val randomInt = Random.nextInt(0, 101)
 
-                    when (randomInt) {
-                        in 1..15 -> {
-                            val resource = Resource(ResourceType.Magnesium, location)
-                            summoningResource(resource)
-                        }
-                        in 16..30 -> {
-                            val resource = Resource(ResourceType.Aluminum, location)
-                            summoningResource(resource)
-                        }
-                        in 31..60 -> {
-                            val resource = Resource(ResourceType.Iron, location)
-                            summoningResource(resource)
-                        }
-                        in 61..80 -> {
-                            val resource = Resource(ResourceType.Gold, location)
-                            summoningResource(resource)
-                        }
-                        else -> {
-                            val resource = Resource(ResourceType.Platinum, location)
-                            summoningResource(resource)
-                        }
-                    }
-                }
+            in 41..46 -> when (r) {
+                in 0..15 -> Magnesium
+                in 16..30 -> Aluminum
+                in 31..60 -> Iron
+                in 61..80 -> Gold
+                else -> Platinum
             }
-            in 47..52 -> {
-                mineType.resourcesLocations.forEach { location ->
-                    val randomInt = Random.nextInt(0, 101)
 
-                    when (randomInt) {
-                        in 1..15 -> {
-                            val resource = Resource(ResourceType.Magnesium, location)
-                            summoningResource(resource)
-                        }
-                        in 16..30 -> {
-                            val resource = Resource(ResourceType.Aluminum, location)
-                            summoningResource(resource)
-                        }
-                        in 31..60 -> {
-                            val resource = Resource(ResourceType.Iron, location)
-                            summoningResource(resource)
-                        }
-                        in 61..80 -> {
-                            val resource = Resource(ResourceType.Platinum, location)
-                            summoningResource(resource)
-                        }
-                        else -> {
-                            val resource = Resource(ResourceType.Nickel, location)
-                            summoningResource(resource)
-                        }
-                    }
-                }
+            in 47..52 -> when (r) {
+                in 0..15 -> Magnesium
+                in 16..30 -> Aluminum
+                in 31..60 -> Iron
+                in 61..80 -> Platinum
+                else -> Nickel
             }
-            in 53..60 -> {
-                mineType.resourcesLocations.forEach { location ->
-                    val randomInt = Random.nextInt(0, 101)
 
-                    when (randomInt) {
-                        in 1..15 -> {
-                            val resource = Resource(ResourceType.Magnesium, location)
-                            summoningResource(resource)
-                        }
-                        in 16..30 -> {
-                            val resource = Resource(ResourceType.Aluminum, location)
-                            summoningResource(resource)
-                        }
-                        in 31..60 -> {
-                            val resource = Resource(ResourceType.Iron, location)
-                            summoningResource(resource)
-                        }
-                        in 61..80 -> {
-                            val resource = Resource(ResourceType.Nickel, location)
-                            summoningResource(resource)
-                        }
-                        else -> {
-                            val resource = Resource(ResourceType.Titanium, location)
-                            summoningResource(resource)
-                        }
-                    }
-                }
+            else -> when (r) {
+                in 0..15 -> Magnesium
+                in 16..30 -> Aluminum
+                in 31..60 -> Iron
+                in 61..80 -> Nickel
+                else -> Titanium
             }
+        }
+    }
+
+    private fun Mine.addEnemyData() {
+        val xOffset = calculateOffset(floor)
+        mineType.enemysLocations.forEach { (x, y, z) ->
+            val spawnLocation = Location(world, x + xOffset, y, z)
+            val enemy = Enemy(spawnLocation, getEntityTypeForFloor(floor))
+            enemys.add(enemy)
+        }
+    }
+
+    private fun getEntityTypeForFloor(floor: Int): EntityType {
+        return when ((floor - 1) % 15) {
+            in 0..4 -> EntityType.DROWNED
+            in 5..9 -> EntityType.HUSK
+            else -> EntityType.ZOMBIE
         }
     }
 
     private fun Mine.summoningResource(resource: Resource) {
-        resource.location.block.type = resource.resourcesType.material
+        resource.location.block.type = Material.BARRIER
+        val itemDisplay = world.spawn(resource.location.add(0.5, 0.5, 0.5), ItemDisplay::class.java)
+        val uuidString = itemDisplay.uniqueId.toString()
+        resource.uuidString = uuidString
+        val itemStack = ItemStack(Material.GRAY_DYE).apply {
+            itemMeta = itemMeta.apply {
+                setCustomModelData(resource.resourcesType.customModelData)
+            }
+        }
+        itemDisplay.setItemStack(itemStack)
         resources.add(resource)
     }
 
-    private fun Mine.enemySummoning() {
-        //TODO("예정")
+    fun Player.leaveMine(mine: Mine) {
+        mine.players.remove(this)
+        mine.enemys.filter { it.isSpawn && !it.isDead && it.enemyUUID != null }.forEach {
+            it.isSpawn = false
+            Bukkit.getEntity(UUID.fromString(it.enemyUUID))?.remove()
+        }
     }
 
-    override fun Player.approach(currentMine: Mine?, floor: Int) {
-        val mines = gameData.mines
-        if (floor == 0) {
-            mines[1].players.remove(this)
-            // teleport()
-            // 광산 퇴장
-            return
+    private fun Mine.spawnEnemys() {
+        enemys.filter { !it.isSpawn && !it.isDead }.forEach {
+            val entity = world.spawnEntity(it.location, it.entityType)
+            it.isSpawn = true
+            it.enemyUUID = entity.uniqueId.toString()
         }
-
-        if (currentMine == null) {
-            // 광산 최초 입장
-            mines[0].players.add(this)
-            teleport(mines[0].startLocation)
-            return
-        }
-        // 원래 10층에 있었는데, 9층으로 가려 함.
-        if (currentMine.floor > floor) {
-            currentMine.players.remove(this)
-            mines[currentMine.floor - 2].players.add(this)
-            val exitBlock = mines[currentMine.floor - 2].exitBlock ?: return
-            teleport(exitBlock.location)
-            return
-        }
-
-        currentMine.players.remove(this)
-        mines[currentMine.floor].players.add(this)
-        val exitBlock = mines[currentMine.floor].exitBlock ?: return
-        teleport(exitBlock.location)
     }
 
-    override fun Player.gathering(resources: Resource) {
-        if (resources.isGathering) return
-        val mine = gameData.mines.find { it.players.contains(this) } ?: return
+    fun Player.gathering(resource: Resource) {
+        if (resource.isGathering) return
+        if (gatheringPlayers.contains(this.uniqueId)) return
 
-        inventory.addItem(resources.resourcesType.dropItem)
-        mine.resources.remove(mine.resources.find { it == resources })
-        resources.location.block.type = Material.AIR
+        val mainHand = inventory.itemInMainHand
+        val customModelData = mainHand.getCustomModelData()
+        if (customModelData !in PICKAXE_MODEL_DATAS) return
 
-        if (mine.exitBlock == null && mine.resources.count { it.isGathering } >= mine.resources.size * 0.7) {
-            resources.location.block.setExit(mine)
+        val mine = mines.find { it.players.contains(this) } ?: return
+        val delay = getGatheringDelay(mainHand, resource.resourcesType) ?: return
+
+        gatheringPlayers.add(uniqueId)
+
+        val soundTask = Bukkit.getScheduler().runTaskTimer(
+            StardewValley.instance,
+            Runnable {
+                playSound(location, Sound.BLOCK_STONE_HIT, 1f, 1f)
+                world.spawnParticle(Particle.BLOCK, resource.location, 10, 0.2, 0.2, 0.2, Material.STONE.createBlockData())
+            },
+            0L, TICKINTERVAL
+        )
+
+        Bukkit.getScheduler().runTaskLater(StardewValley.instance, Runnable {
+            soundTask.cancel()
+
+            val itemStack = ItemStack(Material.RED_DYE).apply {
+                itemMeta = itemMeta.apply {
+                    displayName(miniMessage.deserialize(resource.resourcesType.displayName))
+                    setCustomModelData(resource.resourcesType.customModelData)
+                }
+            }
+
+            val itemDisplay = resource.getItemDisplay() ?: return@Runnable
+            itemDisplay.remove()
+
+            inventory.addItem(itemStack)
+            resource.isGathering = true
+            resource.location.block.type = Material.AIR
+
+            playSound(location, Sound.BLOCK_STONE_BREAK, 1f, 1f)
+            world.spawnParticle(Particle.BLOCK, resource.location, 30, 0.3, 0.3, 0.3, Material.STONE.createBlockData())
+
+            val gathered = mine.resources.count { it.isGathering }
+            if (mine.exitBlockLocation == null && gathered >= ceil(mine.resources.size * 0.7).toInt()) {
+                resource.location.block.setExit(mine)
+
+                if (gameData.maxMineFloor < mine.floor) {
+                    gameData.maxMineFloor = mine.floor
+                }
+            }
+
+            gatheringPlayers.remove(uniqueId)
+            inventory.itemInMainHand.decreaseCustomDurability(1, this)
+        }, delay)
+    }
+
+    fun getGatheringDelay(pickaxe: ItemStack, type: ResourceType): Long? {
+        val sec = when (type) {
+            Magnesium, Aluminum -> when {
+                isHardPickaxe(pickaxe) -> 4.0
+                isLightDrill(pickaxe) -> 4.0
+                isHeavyDrill(pickaxe) -> 2.5
+                else -> return null
+            }
+
+            Iron, Copper, Lithium -> when {
+                isHardPickaxe(pickaxe) -> 6.0
+                isLightDrill(pickaxe) -> 6.0
+                isHeavyDrill(pickaxe) -> 4.0
+                else -> return null
+            }
+
+            Gold -> when {
+                isHardPickaxe(pickaxe) -> 8.0
+                isLightDrill(pickaxe) -> 8.0
+                isHeavyDrill(pickaxe) -> 6.0
+                else -> return null
+            }
+
+            Platinum -> when {
+                isLightDrill(pickaxe) -> 8.0
+                isHeavyDrill(pickaxe) -> 6.0
+                else -> return null
+            }
+
+            Nickel, Titanium -> when {
+                isLightDrill(pickaxe) -> 10.0
+                isHeavyDrill(pickaxe) -> 6.0
+                else -> return null
+            }
         }
+        return (sec * 20).toLong()
+    }
+    fun isHardPickaxe(item: ItemStack): Boolean {
+        return item.getCustomModelData() == PICKAXE_MODEL_DATA
+    }
+    fun isLightDrill(item: ItemStack): Boolean {
+        return item.getCustomModelData() == LIGHTDRILL_MODEL_DATA
+    }
+    fun isHeavyDrill(item: ItemStack): Boolean {
+        return item.getCustomModelData() == HEAVYDRILL_MODEL_DATA
+    }
+
+    fun showMineFloorSelector(player: Player, page: Int = 0) {
+        val floorsPerPage = 45
+
+        val accessibleFloors = mines.filter {
+            it.floor == 1 || mines.any { m -> m.floor == it.floor - 1 && m.floor <= gameData.maxMineFloor }
+        }.distinctBy { it.floor }.sortedBy { it.floor }
+
+        val totalPages = (accessibleFloors.size - 1) / floorsPerPage + 1
+        val inventory = Bukkit.createInventory(null, 54, "탐험할 층을 선택하세요 - ${page + 1}/$totalPages")
+
+        accessibleFloors.drop(page * floorsPerPage).take(floorsPerPage).forEachIndexed { index, mine ->
+            val item = ItemStack(Material.STONE).apply {
+                itemMeta = itemMeta?.apply { setDisplayName("${mine.floor}층") }
+            }
+            inventory.setItem(index, item)
+        }
+
+        if (page > 0) inventory.setItem(45, ItemStack(Material.ARROW).apply {
+            itemMeta = itemMeta?.apply { setDisplayName("이전 페이지") }
+        })
+
+        if (page < totalPages - 1) inventory.setItem(53, ItemStack(Material.ARROW).apply {
+            itemMeta = itemMeta?.apply { setDisplayName("다음 페이지") }
+        })
+
+        player.setMetadata("mine_select_page", FixedMetadataValue(StardewValley.instance, page))
+        player.openInventory(inventory)
     }
 
     private fun Block.setExit(mine: Mine) {
-        type = Material.DARK_OAK_DOOR // 추후 타입 수정
-        mine.exitBlock = this
-        // 내려가는 길(출구) 생성
+        type = Material.WAXED_COPPER_BULB
+        mine.exitBlockLocation = location
+    }
+
+    fun Resource.getItemDisplay(): ItemDisplay? {
+        val uuid = UUID.fromString(uuidString)
+        val entity = Bukkit.getEntity(uuid)
+        if (entity !is ItemDisplay) return null
+        return entity
     }
 }

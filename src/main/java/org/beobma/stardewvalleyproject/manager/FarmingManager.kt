@@ -1,247 +1,319 @@
 package org.beobma.stardewvalleyproject.manager
 
+import org.beobma.stardewvalleyproject.manager.CustomModelDataManager.getCustomModelData
 import org.beobma.stardewvalleyproject.manager.DataManager.gameData
+import org.beobma.stardewvalleyproject.manager.DataManager.interactionFarmlands
+import org.beobma.stardewvalleyproject.manager.DataManager.plantList
+import org.beobma.stardewvalleyproject.manager.PlantManager.PLANT_STAR_ICON_OFFSET
+import org.beobma.stardewvalleyproject.manager.PlantManager.getHarvestItem
+import org.beobma.stardewvalleyproject.manager.PlantManager.getItemDisplay
+import org.beobma.stardewvalleyproject.manager.PlantManager.getPlantInstance
+import org.beobma.stardewvalleyproject.manager.PlantManager.getRegisterPlants
+import org.beobma.stardewvalleyproject.manager.PlantManager.getSeedItem
+import org.beobma.stardewvalleyproject.manager.PlantManager.plantAgIcons
+import org.beobma.stardewvalleyproject.manager.PlantManager.plantModels
+import org.beobma.stardewvalleyproject.manager.PlantManager.plantSeedIcons
+import org.beobma.stardewvalleyproject.manager.ToolManager.AUTO_HOE_CUSTOM_MODEL_DATA
+import org.beobma.stardewvalleyproject.manager.ToolManager.CAPSULEGUN_CUSTOM_MODEL_DATA
+import org.beobma.stardewvalleyproject.manager.ToolManager.CAPSULE_MODEL_DATAS
+import org.beobma.stardewvalleyproject.manager.ToolManager.DURABLE_HOE_CUSTOM_MODEL_DATA
+import org.beobma.stardewvalleyproject.manager.ToolManager.GROWTH_CAPSULE_MODEL_DATA
+import org.beobma.stardewvalleyproject.manager.ToolManager.HOE_CUSTOM_MODEL_DATAS
+import org.beobma.stardewvalleyproject.manager.ToolManager.LIGHT_AND_STURDY_HOE_CUSTOM_MODEL_DATA
+import org.beobma.stardewvalleyproject.manager.ToolManager.NUTRIENT_CAPSULE_MODEL_DATA
+import org.beobma.stardewvalleyproject.manager.ToolManager.PUMP_WATERINGCAN_CUSTOM_MODEL_DATA
+import org.beobma.stardewvalleyproject.manager.ToolManager.WATERINGCAN_CUSTOM_MODEL_DATA
+import org.beobma.stardewvalleyproject.manager.ToolManager.WATERINGCAN_CUSTOM_MODEL_DATAS
+import org.beobma.stardewvalleyproject.manager.ToolManager.WEED_KILLER_CAPSULE_MODEL_DATA
+import org.beobma.stardewvalleyproject.manager.ToolManager.decreaseCustomDurability
 import org.beobma.stardewvalleyproject.plant.Plant
-import org.beobma.stardewvalleyproject.plant.list.*
-import org.beobma.stardewvalleyproject.tool.Capsule
+import org.beobma.stardewvalleyproject.plant.list.DeadGrassPlant
 import org.beobma.stardewvalleyproject.tool.CapsuleType
-import org.beobma.stardewvalleyproject.tool.Hoe
-import org.beobma.stardewvalleyproject.tool.WateringCan
 import org.bukkit.Material
+import org.bukkit.Particle
+import org.bukkit.Sound
 import org.bukkit.block.Block
 import org.bukkit.block.BlockFace
-import org.bukkit.block.data.Ageable
 import org.bukkit.block.data.type.Farmland
+import org.bukkit.entity.ItemDisplay
 import org.bukkit.entity.Player
+import org.bukkit.inventory.ItemStack
 import kotlin.random.Random
 
-interface FarmingHandler {
-    fun Player.tillage(block: Block)
-    fun Player.watering(block: Block)
-    fun Player.plant(block: Block, plant: Plant)
-    fun Player.harvesting(plant: Plant)
 
-    fun Player.capsule(plant: Plant)
-
-    fun Plant.isWatering(): Boolean
-
-    fun Plant.growth()
-}
-
-object FarmingManager : FarmingHandler {
-    private val hoeClass = Hoe()
-    private val wateringCanClass = WateringCan()
-    private val capsuleClass = Capsule()
-    val plants: HashSet<Plant> = hashSetOf(
-        BitPlant(), CabbagePlant(), CoffeeBeansPlant(), CornerPlant(), CranberryPlant(), CucumberPlant(), DeadGrassPlant(),
-        PotatoPlant(), PumpkinPlant(), TomatoPlant(), WheatPlant()
+object FarmingManager {
+    // 3x3 크기
+    private val NEIGHBOR_OFFSETS: List<Pair<Int, Int>> = listOf(
+        -1 to -1, -1 to 0, -1 to 1,
+        0 to -1, 0 to 0, 0 to 1,
+        1 to -1, 1 to 0, 1 to 1
     )
 
-    override fun Player.tillage(block: Block) {
+    fun Player.tillage(block: Block) {
+        val mainHandItem = inventory.itemInMainHand
+        val customModelData = mainHandItem.getCustomModelData()
+
         if (block.type != Material.DIRT) return
+        if (customModelData !in HOE_CUSTOM_MODEL_DATAS) return
 
-        val handItem = inventory.itemInMainHand
-        if (handItem !in hoeClass.hoes) return
+        when (customModelData) {
+            DURABLE_HOE_CUSTOM_MODEL_DATA -> durableHoeHandler(block)
 
-        fun convertToFarmland(targetBlock: Block) {
-            targetBlock.type = Material.FARMLAND
-            gameData.interactionFarmlands.add(targetBlock)
+            LIGHT_AND_STURDY_HOE_CUSTOM_MODEL_DATA -> lightAndSturdyHoeHandler(block)
+
+            AUTO_HOE_CUSTOM_MODEL_DATA -> autoHoeHandelr(block, this)
         }
 
-        val offsets = listOf(
-            Pair(-1, -1), Pair(-1, 0), Pair(-1, 1),
-            Pair(0, -1),  Pair(0, 0),  Pair(0, 1),
-            Pair(1, -1),  Pair(1, 0),  Pair(1, 1)
-        )
-        val originalLocation = block.location.clone()
+        mainHandItem.decreaseCustomDurability(1, this)
+    }
 
-        when (handItem) {
-            hoeClass.hoe, hoeClass.durableHoe -> {
-                convertToFarmland(block)
+    private fun convertToFarmland(block: Block) {
+        block.type = Material.FARMLAND
+        interactionFarmlands.add(block.location)
+    }
+
+    private fun durableHoeHandler(block: Block) {
+        convertToFarmland(block)
+    }
+
+    private fun lightAndSturdyHoeHandler(block: Block) {
+        val origin = block.location.clone()
+        for ((dx, dz) in NEIGHBOR_OFFSETS) {
+            val targetBlock = origin.clone().add(dx.toDouble(), 0.0, dz.toDouble()).block
+            if (targetBlock.type == Material.DIRT) {
+                convertToFarmland(targetBlock)
             }
+        }
+    }
 
-            hoeClass.lightAndSturdyHoe -> {
-                for ((i, j) in offsets) {
-                    val targetLocation = originalLocation.clone().add(i.toDouble(), 0.0, j.toDouble())
-                    if (targetLocation.block.type == Material.DIRT) {
-                        convertToFarmland(targetLocation.block)
-                    }
-                }
-            }
+    private fun autoHoeHandelr(block: Block, player: Player) {
+        val registeredPlants = getRegisterPlants()
+        val origin = block.location.clone()
+        val offHandItem = player.inventory.itemInOffHand
+        val offHandCustomModelData = offHandItem.getCustomModelData()
+        val plantType = registeredPlants.find { it.getSeedItem().getCustomModelData() == offHandCustomModelData }
 
-            hoeClass.autoHoe -> {
-                val offHandItem = inventory.itemInOffHand
-                val plant = plants.find { it.getSeedItem().itemMeta == offHandItem.itemMeta } ?: return
+        for ((dx, dz) in NEIGHBOR_OFFSETS) {
+            val targetBlock = origin.clone().add(dx.toDouble(), 0.0, dz.toDouble()).block
+            if (targetBlock.type == Material.DIRT) {
+                convertToFarmland(targetBlock)
 
-                for ((i, j) in offsets) {
-                    val newPlant = plant.copy()
-                    val targetLocation = originalLocation.clone().add(i.toDouble(), 0.0, j.toDouble())
-                    val targetBlock = targetLocation.block
-                    if (targetBlock.type == Material.DIRT) {
-                        convertToFarmland(targetBlock)
-                        if (offHandItem.amount > 0) {
-                            plant(targetBlock, newPlant)
-                            offHandItem.amount--
-                        }
-                    }
+                if (plantType != null && offHandItem.amount > 0) {
+                    val plantInstance = getPlantInstance(plantType)
+                    player.plant(targetBlock, plantInstance)
+                    offHandItem.amount--
                 }
             }
         }
     }
 
-    override fun Player.watering(block: Block) {
-        val handItem = inventory.itemInMainHand
-        val wateringCans = wateringCanClass.wateringCans
-
-        if (handItem !in wateringCans) return
-
-        fun updateFarmland(targetBlock: Block) {
-            val farmland = targetBlock.blockData as? Farmland
-            if (farmland != null && farmland.moisture < farmland.maximumMoisture) {
-                farmland.moisture = farmland.maximumMoisture
-                targetBlock.blockData = farmland
-                gameData.interactionFarmlands.add(targetBlock)
-            }
+    private fun updateFarmland(targetBlock: Block) {
+        val farmland = targetBlock.blockData as? Farmland ?: return
+        if (farmland.moisture < farmland.maximumMoisture) {
+            farmland.moisture = farmland.maximumMoisture
+            targetBlock.blockData = farmland
+            interactionFarmlands.add(targetBlock.location)
         }
-
-        updateFarmland(block)
-        updateFarmland(block.getRelative(BlockFace.DOWN))
     }
 
-    override fun Player.plant(block: Block, plant: Plant) {
-        val item = inventory.itemInMainHand
-        val cropBlock = block.getRelative(BlockFace.UP)
 
-        if (block.blockData !is Farmland) return
-        if (gameData.blockToPlantMap[block] is Plant) return
+    fun Player.watering(block: Block) {
+        val handItem = inventory.itemInMainHand
+        val customModelData = handItem.getCustomModelData()
 
+        if (handItem.type != Material.WOODEN_SHOVEL) return
+        if (customModelData !in WATERINGCAN_CUSTOM_MODEL_DATAS) return
+
+        when (customModelData) {
+            WATERINGCAN_CUSTOM_MODEL_DATA -> wateringCanHandler(block)
+
+            PUMP_WATERINGCAN_CUSTOM_MODEL_DATA -> pumpWateringCanHandler(block)
+        }
+        playSound(block.location, Sound.ITEM_BUCKET_EMPTY, 1.0f, 1.0f)
+
+        handItem.decreaseCustomDurability(1, this)
+    }
+
+    private fun Player.wateringCanHandler(block: Block) {
+        spawnParticle(Particle.FALLING_WATER, block.location.add(0.5, 0.5, 0.5), 10, 0.1, 0.1, 0.1, 1.0)
+        if (block.type == Material.FARMLAND) updateFarmland(block)
+        else updateFarmland(block.getRelative(BlockFace.DOWN))
+    }
+
+    private fun Player.pumpWateringCanHandler(block: Block) {
+        val origin = block.location.clone()
+
+        for ((dx, dz) in NEIGHBOR_OFFSETS) {
+            val targetBlock = origin.clone().add(dx.toDouble(), 0.0, dz.toDouble()).block
+            spawnParticle(Particle.FALLING_WATER, targetBlock.location.add(0.5, 0.5, 0.5), 10, 0.1, 0.1, 0.1, 1.0)
+
+            if (targetBlock.type == Material.FARMLAND) updateFarmland(targetBlock)
+            else updateFarmland(targetBlock.getRelative(BlockFace.DOWN))
+        }
+    }
+
+    fun Player.plant(block: Block, plant: Plant) {
+        val plantStatus = plant.plantStatus
+
+        var item = inventory.itemInMainHand
+        var itemCustomModelData = item.getCustomModelData()
+        var registeredPlant = getRegisterPlants().find { it.getSeedItem().getCustomModelData() == itemCustomModelData }
+
+        if (registeredPlant == null) {
+            item = inventory.itemInOffHand
+            itemCustomModelData = item.getCustomModelData()
+            registeredPlant = getRegisterPlants().find { it.getSeedItem().getCustomModelData() == itemCustomModelData }
+        }
+
+        if (registeredPlant == null) return
+
+        if (plantList.any { it.farmlandLocation == block.location }) return
         if (Random.nextInt(100) < 15) {
-            plant.isWeeds = true
+            plantStatus.isWeeds = true
         }
 
-        cropBlock.type = Material.WHEAT
-        val cropBlockData = cropBlock.blockData
-        if (cropBlockData is Ageable) {
-            cropBlockData.age = 0
-            cropBlock.blockData = cropBlockData
+        plant.farmlandLocation = block.location
+        plantStatus.isPlant = true
+
+        if (itemCustomModelData == plantSeedIcons[registeredPlant]) item.amount--
+        plantList.add(plant)
+        val itemDisplay = world.spawn(block.location.add(0.5, 1.4, 0.5), ItemDisplay::class.java)
+        val uuidString = itemDisplay.uniqueId.toString()
+        plant.uuidString = uuidString
+        val itemStack = ItemStack(Material.BLUE_DYE).apply {
+            itemMeta = itemMeta.apply {
+                if (plantStatus.isWeeds) {
+                    setCustomModelData(41)
+                }
+                else {
+                    setCustomModelData(plantModels[registeredPlant])
+                }
+            }
         }
-
-        // 블럭 == 심었을 때 시각적으로 보이는 작물 즉, 씨앗의 블럭
-        plant.block = cropBlock
-        plant.isPlant = true
-
-        if (item.itemMeta == plant.getSeedItem().itemMeta) item.amount--
-        gameData.plantList.add(plant)
-
-        // 블럭 == 작물이 심어진 경작지.
-        gameData.blockToPlantMap[block] = plant
+        itemDisplay.setItemStack(itemStack)
+        playSound(block.location, Sound.ITEM_HOE_TILL, 1.0f, 1.0f)
     }
 
-    override fun Player.harvesting(plant: Plant) {
-        if (!plant.isPlant) return
-        val block = plant.block ?: return // 식물 블럭
-        val cropBlock = block.getRelative(BlockFace.DOWN) // 경작지
+    fun Player.harvesting(plant: Plant) {
+        val plantStatus = plant.plantStatus
 
-        if (plant.name == DeadGrassPlant().name) {
-            removePlant(plant, cropBlock)
-            cropBlock.type = Material.AIR
+        if (plantStatus.isDeadGrass) {
+            removePlant(plant)
             return
         }
-        if (!plant.isHarvestComplete) return
+        if (!plantStatus.isHarvestComplete) return
+        if (!plantStatus.isPlant) return
 
-        val harvestItem = plant.getHarvestItem()
-        val isNutrient = (plant.capsuleType == CapsuleType.Nutrient)
-        val iridiumChance = if (isNutrient) 0 else 30
+        val registeredPlant =
+            getRegisterPlants().find { it.getSeedItem().getCustomModelData() == plant.getSeedItem().getCustomModelData() }
+        val customModelData = plantAgIcons[registeredPlant] ?: return
+        val isNutrient = (plantStatus.capsuleType == CapsuleType.Nutrient)
+        val iridiumChance = if (!isNutrient) 0 else 30
         val goldChance = if (isNutrient) 30 else 70
-
-        if (plant.yield != 1) {
-            val yieldCount = Random.nextInt(1, plant.yield + 1)
+        if (plant.harvestAmount != 1) {
+            val yieldCount = Random.nextInt(1, plant.harvestAmount + 1)
             repeat(yieldCount) {
+                val harvestItem = plant.getHarvestItem()
                 val starChance = Random.nextInt(1, 101)
                 when {
                     starChance <= iridiumChance -> {
-                        // TODO: 이리듐 관련 모델 데이터 수정
+                        harvestItem.itemMeta = harvestItem.itemMeta.apply { setCustomModelData(customModelData + (PLANT_STAR_ICON_OFFSET * 2)) }
                     }
+
                     starChance <= iridiumChance + goldChance -> {
-                        // TODO: 금 관련 모델 데이터 수정
+                        harvestItem.itemMeta = harvestItem.itemMeta.apply { setCustomModelData(customModelData + (PLANT_STAR_ICON_OFFSET)) }
                     }
+
                     else -> {
-                        // TODO: 은 관련 모델 데이터 수정 (기본)
+                        harvestItem.itemMeta = harvestItem.itemMeta.apply { setCustomModelData(customModelData) }
                     }
                 }
                 inventory.addItem(harvestItem)
             }
-            block.type = Material.AIR
-            removePlant(plant, cropBlock)
+            removePlant(plant)
             return
         }
 
-        block.type = Material.AIR
-        inventory.addItem(harvestItem)
-        removePlant(plant, cropBlock)
-    }
-
-    private fun Player.removePlant(plant: Plant, block: Block) {
-        gameData.plantList.remove(plant)
-        gameData.blockToPlantMap.remove(block)
-    }
-
-    override fun Player.capsule(plant: Plant) {
-        val handItem = this.inventory.itemInMainHand
-        val offHandItem = this.inventory.itemInOffHand
-        val capsuleGun = capsuleClass.capsuleGun
-        val capsules = capsuleClass.capsules
-
-        if (handItem != capsuleGun) return
-        if (offHandItem !in capsules) return
-        if (plant.isHarvestComplete) return
-        if (!plant.isPlant) return
-        if (plant.capsuleType != CapsuleType.None) return
-
-        when (offHandItem) {
-            capsuleClass.growthCapsule -> {
-                plant.capsuleType = CapsuleType.Growth
+        val harvestItem = plant.getHarvestItem()
+        val starChance = Random.nextInt(1, 101)
+        when {
+            starChance <= iridiumChance -> {
+                harvestItem.itemMeta = harvestItem.itemMeta.apply { setCustomModelData(customModelData + (PLANT_STAR_ICON_OFFSET * 2)) }
             }
-            capsuleClass.nutrientCapsule -> {
-                plant.capsuleType = CapsuleType.Nutrient
+
+            starChance <= iridiumChance + goldChance -> {
+                harvestItem.itemMeta = harvestItem.itemMeta.apply { setCustomModelData(customModelData + (PLANT_STAR_ICON_OFFSET)) }
             }
-            capsuleClass.weedKillerCapsule -> {
-                plant.capsuleType = CapsuleType.WeedKiller
-            }
+
             else -> {
-                plant.capsuleType = CapsuleType.None
+                harvestItem.itemMeta = harvestItem.itemMeta.apply { setCustomModelData(customModelData) }
             }
         }
+        inventory.addItem(harvestItem)
+        removePlant(plant)
+    }
 
+    fun Player.capsule(plant: Plant) {
+        val plantStatus = plant.plantStatus
+        val handItem = this.inventory.itemInMainHand
+        val handItemCustomModelData = handItem.getCustomModelData()
+        val offHandItem = this.inventory.itemInOffHand
+        val offItemCustomModelData = offHandItem.getCustomModelData()
+
+        if (handItemCustomModelData != CAPSULEGUN_CUSTOM_MODEL_DATA) return
+        if (offItemCustomModelData !in CAPSULE_MODEL_DATAS) return
+        if (plantStatus.isHarvestComplete) return
+        if (!plantStatus.isPlant) return
+        if (plantStatus.capsuleType != CapsuleType.None) return
+
+        when (offItemCustomModelData) {
+            GROWTH_CAPSULE_MODEL_DATA -> {
+                plantStatus.capsuleType = CapsuleType.Growth
+            }
+
+            NUTRIENT_CAPSULE_MODEL_DATA -> {
+                plantStatus.capsuleType = CapsuleType.Nutrient
+            }
+
+            WEED_KILLER_CAPSULE_MODEL_DATA -> {
+                plantStatus.capsuleType = CapsuleType.WeedKiller
+            }
+
+            else -> {
+                plantStatus.capsuleType = CapsuleType.None
+            }
+        }
+        val farmlandLocation = plant.farmlandLocation
+        if (farmlandLocation != null) {
+            spawnParticle(Particle.END_ROD, farmlandLocation, 10, 0.0, 0.0, 0.0, 0.0)
+            playSound(farmlandLocation, Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f)
+        }
         offHandItem.amount -= 1
     }
 
-    override fun Plant.isWatering(): Boolean {
-        val block = block
-        if (block !is Block) return false
-        val cropBlock = block.getRelative(BlockFace.DOWN)
-        if (cropBlock.type != Material.FARMLAND) return false
-        val farmland = cropBlock.blockData as? Farmland ?: return false
-
+    fun Plant.isWatering(): Boolean {
+        val farmland = farmlandLocation?.block?.blockData as? Farmland ?: return false
         return farmland.moisture == farmland.maximumMoisture
     }
 
-    override fun Plant.growth() {
-        if (!isPlant) return
-        val blockBelow = block?.getRelative(BlockFace.DOWN) ?: return
-        val farmland = (blockBelow.blockData as? Farmland) ?: return
+    fun Plant.growth() {
+        val plantStatus = plantStatus
 
-        if (!plantSeasons.contains(gameData.season)) {
-            if (name != DeadGrassPlant().name) {
+        if (!plantStatus.isPlant) return
+        val farmlandBlock = farmlandLocation ?: return
+        val farmland = farmlandBlock.block.blockData as? Farmland ?: return
+        if (!growableSeasons.contains(gameData.season)) {
+            if (this !is DeadGrassPlant) {
                 wither()
+                return
             }
             return
         }
 
-        if (!isWatering() || isHarvestComplete) return
+        if (plantStatus.isHarvestComplete) return
 
-        val world = blockBelow.world
-        val location = blockBelow.location
+        val world = farmlandBlock.world
+        val location = farmlandBlock
         val baseX = location.blockX
         val baseY = location.blockY
         val baseZ = location.blockZ
@@ -249,55 +321,102 @@ object FarmingManager : FarmingHandler {
         var weedFound = false
         var nonWeedFound = false
 
-        loop@ for (x in (baseX - 1)..(baseX + 1)) {
-            for (z in (baseZ - 1)..(baseZ + 1)) {
-                val currentBlock = world.getBlockAt(x, baseY, z)
-                if (currentBlock.type != Material.FARMLAND) continue
-                val adjacentPlant = gameData.blockToPlantMap[currentBlock] ?: continue
+        if (plantStatus.capsuleType != CapsuleType.WeedKiller) {
+            loop@ for (x in (baseX - 1)..(baseX + 1)) {
+                for (z in (baseZ - 1)..(baseZ + 1)) {
+                    val currentBlock = world.getBlockAt(x, baseY, z)
+                    if (currentBlock.type != Material.FARMLAND) continue
+                    val adjacentPlant = plantList.find { it.farmlandLocation?.block == currentBlock } ?: continue
 
-                if (adjacentPlant.isWeeds) {
-                    weedFound = true
-                    break@loop
-                } else {
-                    nonWeedFound = true
+                    if (adjacentPlant.plantStatus.isWeeds) {
+                        weedFound = true
+                        break@loop
+                    } else {
+                        nonWeedFound = true
+                    }
+                }
+            }
+            when {
+                weedFound -> {
+                    plantStatus.weedsCount++
+                    if (plantStatus.weedsCount > 2) wither()
+                }
+
+                nonWeedFound -> {
+                    if (!isWatering()) return
+                    val growthDone = if (plantStatus.capsuleType == CapsuleType.Growth) {
+                        --remainingGrowthDays <= 1
+                    } else {
+                        --remainingGrowthDays <= 0
+                    }
+                    if (growthDone) plantStatus.isHarvestComplete = true
+                    val progress = (growthDays - remainingGrowthDays).toDouble() / growthDays
+                    val registeredPlant =
+                        getRegisterPlants().find { it.getSeedItem().getCustomModelData() == getSeedItem().getCustomModelData() }
+                    val itemDisplay = getItemDisplay() ?: return
+                    val modelData = plantModels[registeredPlant] ?: return
+
+                    val stage = when {
+                        plantStatus.isHarvestComplete -> 3
+                        progress >= 0.66 -> 2
+                        progress >= 0.33 -> 1
+                        else -> 0
+                    }
+                    itemDisplay.setItemStack(itemDisplay.itemStack.apply { itemMeta = itemMeta.apply { setCustomModelData(modelData + stage) } })
+
+
+                    plantStatus.weedsCount = 0
                 }
             }
         }
-
-        if (weedFound) {
-            weedsCount++
-            if (weedsCount > 2) {
-                wither()
-            }
-        } else if (nonWeedFound) {
-            if (capsuleType == CapsuleType.Growth) {
-                if (harvestCycle > 1) harvestCycle--
-                if (harvestCycle <= 1) isHarvestComplete = true
+        else {
+            if (!isWatering()) return
+            val growthDone = if (plantStatus.capsuleType == CapsuleType.Growth) {
+                --remainingGrowthDays <= 1
             } else {
-                if (harvestCycle > 0) harvestCycle--
-                if (harvestCycle <= 0) isHarvestComplete = true
+                --remainingGrowthDays <= 0
             }
-            weedsCount = 0
+            if (growthDone) plantStatus.isHarvestComplete = true
+            val progress = (growthDays - remainingGrowthDays).toDouble() / growthDays
+            val registeredPlant =
+                getRegisterPlants().find { it.getSeedItem().getCustomModelData() == getSeedItem().getCustomModelData() }
+            val itemDisplay = getItemDisplay() ?: return
+            val modelData = plantModels[registeredPlant] ?: return
+
+            val stage = when {
+                plantStatus.isHarvestComplete -> 3
+                progress >= 0.66 -> 2
+                progress >= 0.33 -> 1
+                else -> 0
+            }
+            itemDisplay.setItemStack(itemDisplay.itemStack.apply { itemMeta = itemMeta.apply { setCustomModelData(modelData + stage) } })
+
+
+            plantStatus.weedsCount = 0
         }
 
         farmland.moisture = 0
     }
 
 
+    fun Player.removePlant(plant: Plant) {
+        val farmlandLocation = plant.farmlandLocation
+        if (farmlandLocation != null) {
+            playSound(farmlandLocation, Sound.ITEM_HOE_TILL, 1.0f, 1.0f)
+        }
+        plantList.remove(plant)
+        val itemDisplay = plant.getItemDisplay() ?: return
+        itemDisplay.remove()
+    }
 
     private fun Plant.wither() {
-        val currentBlock = block ?: return
-        val farmland = currentBlock.blockData as? Farmland ?: return
-        val deadGrassPlant = DeadGrassPlant().apply {
-            isHarvestComplete = true
-            isPlant = true
+        plantStatus.isDeadGrass = true
+        val itemDisplay = getItemDisplay() ?: return
+        val itemStack = ItemStack(Material.BLUE_DYE).apply {
+            itemMeta = itemMeta.apply {
+                setCustomModelData(42)
+            }
         }
-        val cropBlock = currentBlock.getRelative(BlockFace.UP)
-
-        cropBlock.type = Material.WHEAT_SEEDS
-        gameData.plantList.remove(this)
-        gameData.plantList.add(deadGrassPlant)
-        gameData.blockToPlantMap[currentBlock] = deadGrassPlant
-        currentBlock.type = Material.DIRT
+        itemDisplay.setItemStack(itemStack)
     }
 }

@@ -1,29 +1,20 @@
 package org.beobma.stardewvalleyproject.plant
 
 
-import org.beobma.stardewvalleyproject.tool.CapsuleType
+import kotlinx.serialization.Serializable
+import org.beobma.stardewvalleyproject.data.LocationSerializer
 import org.beobma.stardewvalleyproject.util.Season
-import org.bukkit.block.Block
-import org.bukkit.entity.Player
-import org.bukkit.inventory.ItemStack
-import java.io.Serializable
+import org.bukkit.Location
 
-abstract class Plant(
+@Serializable
+open class Plant(
     val name: String,
-    var harvestCycle: Int,
-    val yield: Int,
-    val plantSeasons: List<Season>,
-
-    // 추가 변수가 필요할 수 있음
-    // ex: 모델 데이터, 심을 수 있는 블록, 심어지는 방향 등...
-    var isPlant: Boolean = false,
-    var block: Block? = null,
-    var isHarvestComplete: Boolean = false,
-    var isWeeds: Boolean = false,
-    var weedsCount: Int = 0,
-    var capsuleType: CapsuleType = CapsuleType.None,
-) : Serializable {
-    abstract fun getSeedItem(): ItemStack
-    abstract fun getHarvestItem(): ItemStack
-    abstract fun copy(): Plant
-}
+    var remainingGrowthDays: Int,
+    val growthDays: Int,
+    val harvestAmount: Int,
+    val growableSeasons: List<Season>,
+    @Serializable(with = LocationSerializer::class)
+    var farmlandLocation: Location? = null,
+    val plantStatus: PlantStatus = PlantStatus(),
+    var uuidString: String? = null
+)

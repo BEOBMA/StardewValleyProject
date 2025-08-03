@@ -1,15 +1,12 @@
 package org.beobma.stardewvalleyproject.manager
 
-import org.beobma.stardewvalleyproject.manager.DataManager.gameData
-import org.bukkit.Bukkit
+import net.kyori.adventure.text.minimessage.MiniMessage
+import org.beobma.stardewvalleyproject.manager.DataManager.playerList
 
-interface UtilHandler {
-    fun isSingle(): Boolean
-}
+object UtilManager {
+    val miniMessage = MiniMessage.miniMessage()
 
-object UtilManager : UtilHandler {
-    val world = Bukkit.getWorlds().first()
-    override fun isSingle(): Boolean {
-        return gameData.players.size == 1
+    fun isSingle(): Boolean {
+        return playerList.size == 1
     }
 }

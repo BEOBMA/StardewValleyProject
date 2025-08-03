@@ -1,15 +1,17 @@
 package org.beobma.stardewvalleyproject.manager
 
 import org.beobma.stardewvalleyproject.StardewValley
-import org.beobma.stardewvalleyproject.manager.AbnormalStatusManager.faint
 import org.beobma.stardewvalleyproject.manager.DataManager.gameData
+import org.beobma.stardewvalleyproject.manager.DataManager.interactionFarmlands
+import org.beobma.stardewvalleyproject.manager.DataManager.plantList
 import org.beobma.stardewvalleyproject.manager.FarmingManager.growth
+import org.beobma.stardewvalleyproject.manager.MineManager.nextDay
 import org.beobma.stardewvalleyproject.plant.Plant
 import org.beobma.stardewvalleyproject.plant.list.DeadGrassPlant
 import org.beobma.stardewvalleyproject.util.Season
 import org.bukkit.Bukkit
+import org.bukkit.Location
 import org.bukkit.Material
-import org.bukkit.block.Block
 import org.bukkit.block.data.type.Farmland
 import org.bukkit.scheduler.BukkitRunnable
 import org.bukkit.scheduler.BukkitTask
@@ -23,8 +25,8 @@ interface TimeHandler {
 }
 
 object TimeManager : TimeHandler {
-    private var timeBukkitTask: BukkitTask? = null
-    private val seasonTimeMapping: Map<Season, Map<Int, Int>> = mapOf(
+    private var timeTask: BukkitTask? = null
+    private val seasonTimeMapping = mapOf(
         Season.Spring to mapOf(
             6 to 22917, 7 to 23450, 8 to 450, 9 to 1000, 10 to 2000, 11 to 4000,
             12 to 6000, 13 to 7700, 14 to 8300, 15 to 9000, 16 to 10000,
@@ -51,90 +53,78 @@ object TimeManager : TimeHandler {
         )
     )
 
+    override fun timePlay() {
+        if (timeTask != null) return
+        timeTask = object : BukkitRunnable() {
+            override fun run() {
+                advanceTime()
+
+                if (gameData.hour in 3..5) {
+                    endOfDay()
+                    return
+                }
+
+                Bukkit.getWorld("world")?.time = getMinecraftTime(gameData.season, gameData.hour).toLong()
+            }
+        }.runTaskTimer(StardewValley.instance, 0, 125L)
+    }
+
+    override fun timePause() {
+        timeTask?.cancel()
+        timeTask = null
+    }
+
+    override fun getHour(): Int = gameData.hour
+    override fun getMinutes(): Int = gameData.minute
+    override fun getSeason(): Season = gameData.season
+
+
+    private fun advanceTime() {
+        gameData.minute += 10
+        if (gameData.minute >= 60) {
+            gameData.hour += 1
+            gameData.minute = 0
+        }
+    }
+
     private fun getMinecraftTime(season: Season, hour: Int): Int {
         return seasonTimeMapping[season]?.get(hour) ?: 18000
     }
 
-    override fun timePlay() {
-        startGameTime()
-    }
+    fun endOfDay() {
+        gameData.day++
+        resetTime()
 
-    override fun timePause() {
-        timeBukkitTask?.cancel()
-        timeBukkitTask = null
-    }
+        plantList.forEach { it.growth() }
 
-    override fun getHour(): Int = gameData.hour
+        val blocksToDry = hashSetOf<Location>()
 
-    override fun getMinutes(): Int = gameData.minute
+        interactionFarmlands.forEach { block ->
+            val farmland = block.block.blockData as? Farmland ?: return@forEach
+            val plant = plantList.find { it.farmlandLocation == block.block.location }
 
-    override fun getSeason(): Season = gameData.season
-
-    private fun timeStop() {
-        timeBukkitTask?.cancel()
-        timeBukkitTask = null
-        gameData.hour = 6
-        gameData.minute = 0
-    }
-
-    private fun startGameTime() {
-        if (timeBukkitTask != null) return
-
-        timeBukkitTask = object : BukkitRunnable() {
-            override fun run() {
-                gameData.minute += 10
-                if (gameData.minute >= 60) {
-                    gameData.hour += 1
-                    gameData.minute = 0
-                }
-
-                if (gameData.hour in 2..5) {
-                    dayEnd()
-                    return
-                }
-
-                val minecraftTime = getMinecraftTime(gameData.season, gameData.hour)
-                Bukkit.getWorld("world")?.time = minecraftTime.toLong()
+            if (plant is DeadGrassPlant) return@forEach
+            if (plant !is Plant && farmland.moisture != farmland.maximumMoisture) {
+                block.block.type = Material.DIRT
+                blocksToDry.add(block)
+                return@forEach
             }
-        }.runTaskTimer(StardewValley.instance, 0, 125)
-    }
 
-    private fun handlePlayerFaint() {
-        logMessage("StardewValley Player Time Over")
-        timeStop()
-        gameData.players.forEach { it.faint() }
+            farmland.moisture = 0
+            block.block.blockData = farmland
+        }
+
+        interactionFarmlands.removeAll(blocksToDry)
+
+        nextDay()
+        // 플레이어 기절 시
+        // gameData.hour += 3
         timePlay()
     }
 
-    private fun dayEnd() {
-        logMessage("StardewValley Day End")
-        gameData.day++
+    private fun resetTime() {
+        timePause()
         gameData.hour = 6
         gameData.minute = 0
-
-        gameData.plantList.forEach {
-            it.growth()
-        }
-
-        val dirts = hashSetOf<Block>()
-        gameData.interactionFarmlands.forEach { block ->
-            val farmland = block.blockData as? Farmland ?: return@forEach
-
-            if (gameData.blockToPlantMap[block] is DeadGrassPlant) return@forEach
-
-            if (gameData.blockToPlantMap[block] !is Plant && farmland.moisture != farmland.maximumMoisture) {
-                block.type = Material.DIRT
-                dirts.add(block)
-            } else {
-                farmland.moisture = 0
-                block.blockData = farmland
-            }
-        }
-        gameData.interactionFarmlands.removeAll(dirts)
-        handlePlayerFaint()
-    }
-
-    private fun logMessage(message: String) {
-        StardewValley.instance.loggerMessage(message)
     }
 }
