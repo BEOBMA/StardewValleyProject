@@ -56,7 +56,7 @@ object DataManager {
         else json.decodeFromString(jsonText)
         val elapsed = System.currentTimeMillis() - start
 
-        StardewValley.instance.loggerMessage("Saved '$fileName' in ${elapsed}ms")
+        StardewValley.instance.loggerMessage("Loaded '$fileName' in ${elapsed}ms")
         return result
     }
 
