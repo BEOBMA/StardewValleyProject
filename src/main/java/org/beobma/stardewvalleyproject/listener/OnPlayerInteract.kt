@@ -56,7 +56,6 @@ class OnPlayerInteract : Listener {
 
     @EventHandler
     fun onPlayerInteract(event: PlayerInteractEvent) {
-        test(event)
         val player = event.player
         val clickedBlock = event.clickedBlock ?: return
         val item = event.item
@@ -116,65 +115,6 @@ class OnPlayerInteract : Listener {
             player.plant(clickedBlock, newPlant)
             event.isCancelled = true
         }
-    }
-
-    private fun test(e: PlayerInteractEvent) {
-        if (e.action != Action.RIGHT_CLICK_BLOCK) return
-        if (e.hand != EquipmentSlot.HAND) return
-
-        val player = e.player
-
-        if (player.inventory.itemInMainHand.type != Material.AIR) return
-        if (player.inventory.itemInOffHand.type != Material.AIR) return
-
-        val clicked = e.clickedBlock ?: return
-        val loc = clicked.location
-
-        val prev = firstClick[player.uniqueId]
-        if (prev == null) {
-            firstClick[player.uniqueId] = loc
-            player.sendMessage("§a첫 좌표가 설정되었습니다: (${loc.blockX}, ${loc.blockY}, ${loc.blockZ})")
-            return
-        }
-
-        // 두 번째 클릭: 같은 월드인지 확인
-        if (prev.world != loc.world) {
-            player.sendMessage("§c서로 다른 월드입니다. 다시 지정하십시오.")
-            firstClick.remove(player.uniqueId)
-            return
-        }
-
-        val world = loc.world!!
-        val xMin = min(prev.blockX, loc.blockX)
-        val xMax = max(prev.blockX, loc.blockX)
-        val yMin = min(prev.blockY, loc.blockY)
-        val yMax = max(prev.blockY, loc.blockY)
-        val zMin = min(prev.blockZ, loc.blockZ)
-        val zMax = max(prev.blockZ, loc.blockZ)
-
-        val emerald = mutableListOf<String>()
-        val redstone = mutableListOf<String>()
-
-        for (x in xMin..xMax) {
-            for (y in yMin..yMax) {
-                for (z in zMin..zMax) {
-                    when (world.getBlockAt(x, y, z).type) {
-                        Material.EMERALD_BLOCK  -> emerald += "Triple($x.0, $y.0, $z.0)"
-                        Material.REDSTONE_BLOCK -> redstone += "Triple($x.0, $y.0, $z.0)"
-                        else -> {} // 무시
-                    }
-                }
-            }
-        }
-
-        val plugin = StardewValley.instance
-        plugin.logger.info("Emerald blocks")
-        plugin.logger.info("listOf(${emerald.joinToString(", ")})")
-        plugin.logger.info("Redstone blocks")
-        plugin.logger.info("listOf(${redstone.joinToString(", ")})")
-
-        player.sendMessage("§7스캔 완료: §a에메랄드 ${emerald.size}개, §c레드스톤 ${redstone.size}개. 콘솔 로그를 확인하십시오.")
-        firstClick.remove(player.uniqueId)
     }
 
     @EventHandler
