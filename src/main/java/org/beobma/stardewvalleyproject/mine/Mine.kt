@@ -17,6 +17,10 @@ data class Mine(
     val players: MutableList<Player> = mutableListOf(),
     @Serializable(with = LocationSerializer::class)
     var startBlockLocation: Location? = null,
+    var startBlockUUID: String? = null,
+    var startBlockMarker: String? = null,
     @Serializable(with = LocationSerializer::class)
     var exitBlockLocation: Location? = null,
+    var exitBlockUUID: String? = null,
+    var exitBlockMarker: String? = null
 )

@@ -19,19 +19,22 @@ import org.beobma.stardewvalleyproject.resource.ResourceType
 import org.beobma.stardewvalleyproject.resource.ResourceType.*
 import org.bukkit.*
 import org.bukkit.block.Block
+import org.bukkit.entity.Display
 import org.bukkit.entity.EntityType
 import org.bukkit.entity.ItemDisplay
 import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
-import org.bukkit.metadata.FixedMetadataValue
+import org.bukkit.util.Transformation
+import org.joml.AxisAngle4f
+import org.joml.Vector3f
 import java.util.*
 import kotlin.math.ceil
 import kotlin.random.Random
 
 object MineManager {
     private const val MAX_MINE_FLOOR = 60
-    private const val CALCULATE_OFFSET = 58.0
-    private const  val TICKINTERVAL = 10L
+    private const val CALCULATE_OFFSET = 160.0
+    private const val TICKINTERVAL = 10L
 
     private val world = Bukkit.getWorlds().first()
     private val miniMessage = MiniMessage.miniMessage()
@@ -45,33 +48,40 @@ object MineManager {
         }
         mines.forEach { mine ->
             mine.resources.forEach { resource ->
-                val itemDisplay = resource.getItemDisplay() ?: return@forEach
-                itemDisplay.remove()
+                resource.getItemDisplay()?.remove()
             }
+            removeItemDisplays(mine)
         }
         mines.clear()
         mines.addAll(generateMines())
     }
 
     fun nextDay() {
-        mines.forEach { mine ->
-            mine.resources.forEach { resource ->
-                val itemDisplay = resource.getItemDisplay() ?: return@forEach
-                itemDisplay.remove()
+        val start = System.currentTimeMillis()
+
+        mines.toList().forEach { mine ->
+            if (mine.players.isEmpty()) return@forEach
+            mine.players.toList().forEach { player ->
+                player.leaveMine(mine)
             }
         }
+        val newMines = generateMines()
+
         mines.clear()
-        mines.addAll(generateMines(true))
+        mines.addAll(newMines)
+
+        val elapsed = System.currentTimeMillis() - start
+        StardewValley.instance.loggerMessage("nextDay completed in ${elapsed}ms")
     }
 
     fun loadData() {
         mines.forEach { mine ->
-            mine.startBlockLocation?.block?.type = Material.GOLD_BLOCK
-            mine.exitBlockLocation?.block?.type = Material.COPPER_BLOCK
+            mine.startBlockLocation?.block?.type = Material.BARRIER
+            mine.exitBlockLocation?.block?.type = Material.BARRIER
         }
     }
 
-    fun Player.approach(currentMine: Mine?, floor: Int) {
+    fun Player.approach(currentMine: Mine?, floor: Int, isExit: Boolean = false) {
         if (floor == 0) {
             currentMine?.let { leaveMine(it) }
             teleport(Location(world, -191.0, -56.0, 95.0))
@@ -81,30 +91,60 @@ object MineManager {
         val nextMine = mines.find { it.floor == floor } ?: return
         currentMine?.let { leaveMine(it) }
 
-        nextMine.players.add(this)
-        teleport(nextMine.startBlockLocation?.clone()?.add(0.0, 1.0, 0.0) ?: return)
-        nextMine.spawnEnemys()
+
+        if (isExit) {
+            val nextMineExitBlockLocation = nextMine.exitBlockLocation
+            if (nextMineExitBlockLocation != null) {
+                nextMine.players.add(this)
+                teleport(nextMineExitBlockLocation.clone().add(0.0, 1.0, 0.0))
+            }
+            else {
+                teleport(Location(world, -191.0, -56.0, 95.0))
+                return
+            }
+        } else {
+            val nextMineStartBlockLocation = nextMine.startBlockLocation
+            if (nextMineStartBlockLocation != null) {
+                nextMine.players.add(this)
+                teleport(nextMineStartBlockLocation.clone().add(0.0, 1.0, 0.0))
+            }
+            else {
+                teleport(Location(world, -191.0, -56.0, 95.0))
+                return
+            }
+        }
+
+        nextMine.spawnVisuals()
     }
 
+    private fun removeItemDisplays(mine: Mine) {
+        mine.startBlockLocation?.block?.type = Material.AIR
+        mine.exitBlockLocation?.block?.type = Material.AIR
+        listOf(
+            mine.startBlockUUID,
+            mine.exitBlockUUID,
+            mine.startBlockMarker,
+            mine.exitBlockMarker
+        ).forEach { it?.let { uuid -> getItemDisplayToUUID(uuid)?.remove() } }
+    }
 
     private fun calculateOffset(floor: Int): Double = ((floor - 1) / 5) * CALCULATE_OFFSET
 
-    private fun generateMines(useTemplateOffset: Boolean = false): List<Mine> {
+    private fun generateMines(): List<Mine> {
         val templates = arrayOf(MineTemplate.M, MineTemplate.N, MineTemplate.R)
         val types = arrayOf(MineType.A, MineType.B, MineType.C, MineType.D, MineType.E)
 
         return (1..MAX_MINE_FLOOR).map { floor ->
             val template = templates[(floor - 1) / 5 % templates.size]
             val type = types[(floor - 1) % types.size]
-            val xOffset = calculateOffset(floor)
+            val zOffset = calculateOffset(floor)
 
             val mine = Mine(floor, template, type).apply {
-                val startX = if (useTemplateOffset) template.x + type.xInterpolation else type.startX
-                val startY = if (useTemplateOffset) template.y + type.yInterpolation else type.startY - 1.0
-                val startZ = if (useTemplateOffset) template.z + type.zInterpolation else type.startZ
+                val startX = type.startX
+                val startY = type.startY
+                val startZ = type.startZ
+                startBlockLocation = Location(world, startX, startY, startZ - zOffset)
 
-                startBlockLocation = Location(world, startX + xOffset, startY, startZ)
-                startBlockLocation?.block?.type = Material.GOLD_BLOCK
                 addResource()
                 addEnemyData()
             }
@@ -112,12 +152,57 @@ object MineManager {
         }
     }
 
+    private fun Mine.createItemDisplays(floor: Int, startBlockLocation: Location?) {
+        startBlockLocation?.let { loc ->
+            val marker =
+                createItemDisplay(loc, Material.LEATHER_HORSE_ARMOR, 4, Vector3f(1.75f, 1.75f, 1.75f), 0.2, 5.0, 0.2)
+            marker.billboard = Display.Billboard.VERTICAL
+            startBlockMarker = marker.uniqueId.toString()
+
+            if (floor != 1) {
+                startBlockUUID = createItemDisplay(
+                    loc,
+                    Material.LEATHER_HORSE_ARMOR,
+                    5,
+                    Vector3f(3.0f, 3.0f, 3.0f),
+                    0.25,
+                    1.8,
+                    0.25
+                ).uniqueId.toString()
+            }
+        }
+    }
+
+    private fun createItemDisplay(
+        loc: Location,
+        material: Material,
+        customModelData: Int,
+        scale: Vector3f,
+        xOffset: Double,
+        yOffset: Double,
+        zOffset: Double
+    ): ItemDisplay {
+        val itemDisplay = world.spawn(loc.clone().add(xOffset, yOffset, zOffset), ItemDisplay::class.java)
+        val itemStack = ItemStack(material).apply {
+            itemMeta = itemMeta.apply { setCustomModelData(customModelData) }
+        }
+        itemDisplay.transformation = Transformation(
+            Vector3f(0f, 0f, 0f),
+            AxisAngle4f(0f, 0f, 0f, 0f),
+            scale,
+            AxisAngle4f(Math.PI.toFloat(), 0f, 1f, 0f)
+        )
+        itemDisplay.setItemStack(itemStack)
+        return itemDisplay
+    }
+
     private fun Mine.addResource() {
-        val xOffset = calculateOffset(floor)
+        val zOffset = calculateOffset(floor)
         mineType.resourcesLocations.forEach { (x, y, z) ->
-            val location = Location(world, x + xOffset, y, z)
+            val location = Location(world, x, y, z - zOffset)
             val type = getRandomForFloor(floor)
-            summoningResource(Resource(type, location))
+            val resource = Resource(type, location)
+            resources.add(resource)
         }
     }
 
@@ -125,7 +210,6 @@ object MineManager {
         val r = Random.nextInt(0, 101)
         return when (floor) {
             in 1..8 -> if (r < 33) Magnesium else Aluminum
-
             in 9..16 -> when (r) {
                 in 0..30 -> Magnesium
                 in 31..60 -> Aluminum
@@ -180,9 +264,9 @@ object MineManager {
     }
 
     private fun Mine.addEnemyData() {
-        val xOffset = calculateOffset(floor)
+        val zOffset = calculateOffset(floor)
         mineType.enemysLocations.forEach { (x, y, z) ->
-            val spawnLocation = Location(world, x + xOffset, y, z)
+            val spawnLocation = Location(world, x, y, z - zOffset)
             val enemy = Enemy(spawnLocation, getEntityTypeForFloor(floor))
             enemys.add(enemy)
         }
@@ -196,22 +280,9 @@ object MineManager {
         }
     }
 
-    private fun Mine.summoningResource(resource: Resource) {
-        resource.location.block.type = Material.BARRIER
-        val itemDisplay = world.spawn(resource.location.add(0.5, 0.5, 0.5), ItemDisplay::class.java)
-        val uuidString = itemDisplay.uniqueId.toString()
-        resource.uuidString = uuidString
-        val itemStack = ItemStack(Material.GRAY_DYE).apply {
-            itemMeta = itemMeta.apply {
-                setCustomModelData(resource.resourcesType.customModelData)
-            }
-        }
-        itemDisplay.setItemStack(itemStack)
-        resources.add(resource)
-    }
-
     fun Player.leaveMine(mine: Mine) {
         mine.players.remove(this)
+        mine.removeVisuals()
         mine.enemys.filter { it.isSpawn && !it.isDead && it.enemyUUID != null }.forEach {
             it.isSpawn = false
             Bukkit.getEntity(UUID.fromString(it.enemyUUID))?.remove()
@@ -227,8 +298,7 @@ object MineManager {
     }
 
     fun Player.gathering(resource: Resource) {
-        if (resource.isGathering) return
-        if (gatheringPlayers.contains(this.uniqueId)) return
+        if (resource.isGathering || gatheringPlayers.contains(this.uniqueId)) return
 
         val mainHand = inventory.itemInMainHand
         val customModelData = mainHand.getCustomModelData()
@@ -243,7 +313,15 @@ object MineManager {
             StardewValley.instance,
             Runnable {
                 playSound(location, Sound.BLOCK_STONE_HIT, 1f, 1f)
-                world.spawnParticle(Particle.BLOCK, resource.location, 10, 0.2, 0.2, 0.2, Material.STONE.createBlockData())
+                world.spawnParticle(
+                    Particle.BLOCK,
+                    resource.location,
+                    10,
+                    0.2,
+                    0.2,
+                    0.2,
+                    Material.STONE.createBlockData()
+                )
             },
             0L, TICKINTERVAL
         )
@@ -258,8 +336,7 @@ object MineManager {
                 }
             }
 
-            val itemDisplay = resource.getItemDisplay() ?: return@Runnable
-            itemDisplay.remove()
+            resource.getItemDisplay()?.remove()
 
             inventory.addItem(itemStack)
             resource.isGathering = true
@@ -270,10 +347,12 @@ object MineManager {
 
             val gathered = mine.resources.count { it.isGathering }
             if (mine.exitBlockLocation == null && gathered >= ceil(mine.resources.size * 0.7).toInt()) {
-                resource.location.block.setExit(mine)
+                if (mine.floor < MAX_MINE_FLOOR) {
+                    resource.location.block.setExit(mine)
 
-                if (gameData.maxMineFloor < mine.floor) {
-                    gameData.maxMineFloor = mine.floor
+                    if (gameData.maxMineFloor < mine.floor) {
+                        gameData.maxMineFloor = mine.floor
+                    }
                 }
             }
 
@@ -319,54 +398,184 @@ object MineManager {
         }
         return (sec * 20).toLong()
     }
+
     fun isHardPickaxe(item: ItemStack): Boolean {
         return item.getCustomModelData() == PICKAXE_MODEL_DATA
     }
+
     fun isLightDrill(item: ItemStack): Boolean {
         return item.getCustomModelData() == LIGHTDRILL_MODEL_DATA
     }
+
     fun isHeavyDrill(item: ItemStack): Boolean {
         return item.getCustomModelData() == HEAVYDRILL_MODEL_DATA
     }
 
-    fun showMineFloorSelector(player: Player, page: Int = 0) {
-        val floorsPerPage = 45
-
+    fun showMineFloorSelector(player: Player) {
         val accessibleFloors = mines.filter {
             it.floor == 1 || mines.any { m -> m.floor == it.floor - 1 && m.floor <= gameData.maxMineFloor }
         }.distinctBy { it.floor }.sortedBy { it.floor }
 
-        val totalPages = (accessibleFloors.size - 1) / floorsPerPage + 1
-        val inventory = Bukkit.createInventory(null, 54, "탐험할 층을 선택하세요 - ${page + 1}/$totalPages")
+        val validFloors = accessibleFloors
+            .map { it.floor }
+            .filter { it % 5 == 1 }
+            .filter { it <= gameData.maxMineFloor }
+            .toMutableSet()
 
-        accessibleFloors.drop(page * floorsPerPage).take(floorsPerPage).forEachIndexed { index, mine ->
-            val item = ItemStack(Material.STONE).apply {
-                itemMeta = itemMeta?.apply { setDisplayName("${mine.floor}층") }
+        validFloors.add(1) // 항상 1층 추가
+        val sortedFloors = validFloors.sorted()
+
+        val slotIndices = listOf(4, 5, 6, 7, 13, 14, 15, 16, 22, 23, 24, 25)
+
+        val inventory = Bukkit.createInventory(null, 27, miniMessage.deserialize("mineShow"))
+
+        for ((i, floor) in sortedFloors.withIndex()) {
+            if (i >= slotIndices.size) break
+
+            val item = ItemStack(Material.GLASS_PANE).apply {
+                itemMeta = itemMeta?.apply {
+                    displayName(miniMessage.deserialize("${floor}층"))
+                    setCustomModelData(1)
+                }
             }
-            inventory.setItem(index, item)
+
+            inventory.setItem(slotIndices[i], item)
         }
 
-        if (page > 0) inventory.setItem(45, ItemStack(Material.ARROW).apply {
-            itemMeta = itemMeta?.apply { setDisplayName("이전 페이지") }
-        })
+        val item = ItemStack(Material.IRON_HORSE_ARMOR).apply {
+            itemMeta = itemMeta?.apply {
+                displayName(miniMessage.deserialize(""))
+                setCustomModelData(10)
+            }
+        }
 
-        if (page < totalPages - 1) inventory.setItem(53, ItemStack(Material.ARROW).apply {
-            itemMeta = itemMeta?.apply { setDisplayName("다음 페이지") }
-        })
+        inventory.setItem(10, item)
 
-        player.setMetadata("mine_select_page", FixedMetadataValue(StardewValley.instance, page))
         player.openInventory(inventory)
     }
 
     private fun Block.setExit(mine: Mine) {
-        type = Material.WAXED_COPPER_BULB
+        type = Material.BARRIER
         mine.exitBlockLocation = location
+
+        val display = createItemDisplay(
+            location, Material.LEATHER_HORSE_ARMOR, 6,
+            Vector3f(1.5f, 1.5f, 1.5f), 0.5, 0.9, 0.5
+        )
+        mine.exitBlockUUID = display.uniqueId.toString()
+
+        val marker = createItemDisplay(
+            location, Material.LEATHER_HORSE_ARMOR, 3,
+            Vector3f(1.75f, 1.75f, 1.75f), 0.5, 2.5, 0.5
+        ).apply {
+            billboard = Display.Billboard.VERTICAL
+            brightness = Display.Brightness(15, 15)
+        }
+        mine.exitBlockMarker = marker.uniqueId.toString()
     }
 
     fun Resource.getItemDisplay(): ItemDisplay? {
+        if (uuidString == null) return null
         val uuid = UUID.fromString(uuidString)
         val entity = Bukkit.getEntity(uuid)
         if (entity !is ItemDisplay) return null
         return entity
+    }
+
+    fun getItemDisplayToUUID(uuid: String): ItemDisplay? {
+        val uuid = UUID.fromString(uuid)
+        val entity = Bukkit.getEntity(uuid)
+        if (entity !is ItemDisplay) return null
+        return entity
+    }
+
+    fun Mine.spawnVisuals() {
+        val start = System.currentTimeMillis()
+
+        if (players.size > 1) return
+
+        startBlockLocation?.block?.type = Material.BARRIER
+        if (floor != 1) {
+            startBlockUUID = createItemDisplay(
+                startBlockLocation!!, Material.LEATHER_HORSE_ARMOR, 5,
+                Vector3f(3.0f, 3.0f, 3.0f), 0.25, 1.8, 0.25
+            ).uniqueId.toString()
+        }
+        val marker = createItemDisplay(
+            startBlockLocation!!, Material.LEATHER_HORSE_ARMOR, 4,
+            Vector3f(1.75f, 1.75f, 1.75f), 0.2, 5.0, 0.2
+        )
+        marker.billboard = Display.Billboard.VERTICAL
+        startBlockMarker = marker.uniqueId.toString()
+
+        exitBlockLocation?.block?.type = Material.BARRIER
+        exitBlockUUID = exitBlockLocation?.let {
+            val display = createItemDisplay(
+                it, Material.LEATHER_HORSE_ARMOR, 6,
+                Vector3f(1.5f, 1.5f, 1.5f), 0.5, 0.9, 0.5
+            )
+            display.uniqueId.toString()
+        }
+
+        exitBlockMarker = exitBlockLocation?.let {
+            val markerDisplay = createItemDisplay(
+                it, Material.LEATHER_HORSE_ARMOR, 3,
+                Vector3f(1.75f, 1.75f, 1.75f), 0.5, 2.5, 0.5
+            )
+            markerDisplay.billboard = Display.Billboard.VERTICAL
+            markerDisplay.brightness = Display.Brightness(15, 15)
+            markerDisplay.uniqueId.toString()
+        }
+
+        addResourceDisplays()
+        spawnEnemysMine()
+
+        val elapsed = System.currentTimeMillis() - start
+        StardewValley.instance.loggerMessage("[Mine] spawnVisuals() for floor $floor took ${elapsed}ms")
+    }
+
+    fun Mine.removeVisuals() {
+        val start = System.currentTimeMillis()
+
+        if (players.isNotEmpty()) return
+
+        startBlockLocation?.block?.type = Material.AIR
+        startBlockUUID?.let { getItemDisplayToUUID(it)?.remove() }
+        startBlockMarker?.let { getItemDisplayToUUID(it)?.remove() }
+        exitBlockLocation?.block?.type = Material.AIR
+        exitBlockUUID?.let { getItemDisplayToUUID(it)?.remove() }
+        exitBlockMarker?.let { getItemDisplayToUUID(it)?.remove() }
+
+        resources.forEach {
+            it.location.block.type = Material.AIR
+            it.getItemDisplay()?.remove()
+        }
+
+        val elapsed = System.currentTimeMillis() - start
+        StardewValley.instance.loggerMessage("[Mine] removeVisuals() for floor $floor took ${elapsed}ms")
+    }
+
+    fun Mine.addResourceDisplays() {
+        resources.filter { !it.isGathering }.forEach { resource ->
+            resource.location.block.type = Material.BARRIER
+            val itemDisplay = world.spawn(resource.location.clone().add(0.5, 0.5, 0.5), ItemDisplay::class.java)
+            resource.uuidString = itemDisplay.uniqueId.toString()
+
+            val itemStack = ItemStack(Material.GRAY_DYE).apply {
+                itemMeta = itemMeta.apply {
+                    setCustomModelData(resource.resourcesType.customModelData)
+                }
+            }
+            itemDisplay.setItemStack(itemStack)
+        }
+    }
+
+
+    fun Mine.spawnEnemysMine() {
+        enemys.filter { !it.isSpawn && !it.isDead }.forEach {
+            val entity = Bukkit.getWorlds().first().spawnEntity(it.location, it.entityType)
+            it.isSpawn = true
+            it.enemyUUID = entity.uniqueId.toString()
+        }
     }
 }

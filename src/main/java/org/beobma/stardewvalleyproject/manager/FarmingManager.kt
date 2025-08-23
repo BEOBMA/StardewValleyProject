@@ -302,13 +302,15 @@ object FarmingManager {
         if (!plantStatus.isPlant) return
         val farmlandBlock = farmlandLocation ?: return
         val farmland = farmlandBlock.block.blockData as? Farmland ?: return
-        if (!growableSeasons.contains(gameData.season)) {
-            if (this !is DeadGrassPlant) {
-                wither()
-                return
-            }
-            return
-        }
+
+        // 계절 시스템
+//        if (!growableSeasons.contains(gameData.season)) {
+//            if (this !is DeadGrassPlant) {
+//                wither()
+//                return
+//            }
+//            return
+//        }
 
         if (plantStatus.isHarvestComplete) return
 

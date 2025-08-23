@@ -1,8 +1,5 @@
 package org.beobma.stardewvalleyproject.resource
 
-import net.kyori.adventure.text.Component
-import net.kyori.adventure.text.minimessage.MiniMessage
-
 enum class ResourceType(
     val displayName: String,
     val customModelData: Int
