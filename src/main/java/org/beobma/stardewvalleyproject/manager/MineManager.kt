@@ -1,5 +1,6 @@
 package org.beobma.stardewvalleyproject.manager
 
+import kr.eme.semiMission.objects.events.MissionEvent
 import net.kyori.adventure.text.minimessage.MiniMessage
 import org.beobma.stardewvalleyproject.StardewValley
 import org.beobma.stardewvalleyproject.entity.Enemy
@@ -81,119 +82,41 @@ object MineManager {
         }
     }
 
-    fun Player.approach(currentMine: Mine?, floor: Int, isExit: Boolean = false) {
+    fun Player.approach(currentMine: Mine?, floor: Int, isExit: Boolean = false): Boolean {
+        val home = Location(this.world, -191.0, -56.0, 95.0)
+
+        fun teleportHome(): Boolean {
+            this.teleport(home)
+            return false
+        }
+
+        // 홈
         if (floor == 0) {
             currentMine?.let { leaveMine(it) }
-            teleport(Location(world, -191.0, -56.0, 95.0))
-            return
+            return teleportHome()
         }
 
-        val nextMine = mines.find { it.floor == floor } ?: return
-        currentMine?.let { leaveMine(it) }
+        val nextMine = mines.firstOrNull { it.floor == floor } ?: return teleportHome()
 
-
-        if (isExit) {
-            val nextMineExitBlockLocation = nextMine.exitBlockLocation
-            if (nextMineExitBlockLocation != null) {
-                nextMine.players.add(this)
-                teleport(nextMineExitBlockLocation.clone().add(0.0, 1.0, 0.0))
-            }
-            else {
-                teleport(Location(world, -191.0, -56.0, 95.0))
-                return
-            }
-        } else {
-            val nextMineStartBlockLocation = nextMine.startBlockLocation
-            if (nextMineStartBlockLocation != null) {
-                nextMine.players.add(this)
-                teleport(nextMineStartBlockLocation.clone().add(0.0, 1.0, 0.0))
-            }
-            else {
-                teleport(Location(world, -191.0, -56.0, 95.0))
-                return
-            }
+        if (currentMine != null && currentMine !== nextMine) {
+            leaveMine(currentMine)
         }
 
+        val base = if (isExit) nextMine.exitBlockLocation else nextMine.startBlockLocation
+        val target = base?.clone()?.add(0.0, 1.0, 0.0) ?: return teleportHome()
+
+        if (this !in nextMine.players) {
+            nextMine.players.add(this)
+        }
+
+        if (nextMine.floor >= 2) {
+            Bukkit.getPluginManager().callEvent(
+                MissionEvent(this, "PLAYER_PROGRESS", "mine_module", 1)
+            )
+        }
+        this.teleport(target)
         nextMine.spawnVisuals()
-    }
-
-    private fun removeItemDisplays(mine: Mine) {
-        mine.startBlockLocation?.block?.type = Material.AIR
-        mine.exitBlockLocation?.block?.type = Material.AIR
-        listOf(
-            mine.startBlockUUID,
-            mine.exitBlockUUID,
-            mine.startBlockMarker,
-            mine.exitBlockMarker
-        ).forEach { it?.let { uuid -> getItemDisplayToUUID(uuid)?.remove() } }
-    }
-
-    private fun calculateOffset(floor: Int): Double = ((floor - 1) / 5) * CALCULATE_OFFSET
-
-    private fun generateMines(): List<Mine> {
-        val templates = arrayOf(MineTemplate.M, MineTemplate.N, MineTemplate.R)
-        val types = arrayOf(MineType.A, MineType.B, MineType.C, MineType.D, MineType.E)
-
-        return (1..MAX_MINE_FLOOR).map { floor ->
-            val template = templates[(floor - 1) / 5 % templates.size]
-            val type = types[(floor - 1) % types.size]
-            val zOffset = calculateOffset(floor)
-
-            val mine = Mine(floor, template, type).apply {
-                val startX = type.startX
-                val startY = type.startY
-                val startZ = type.startZ
-                startBlockLocation = Location(world, startX, startY, startZ - zOffset)
-
-                addResource()
-                addEnemyData()
-            }
-            mine
-        }
-    }
-
-    private fun Mine.createItemDisplays(floor: Int, startBlockLocation: Location?) {
-        startBlockLocation?.let { loc ->
-            val marker =
-                createItemDisplay(loc, Material.LEATHER_HORSE_ARMOR, 4, Vector3f(1.75f, 1.75f, 1.75f), 0.2, 5.0, 0.2)
-            marker.billboard = Display.Billboard.VERTICAL
-            startBlockMarker = marker.uniqueId.toString()
-
-            if (floor != 1) {
-                startBlockUUID = createItemDisplay(
-                    loc,
-                    Material.LEATHER_HORSE_ARMOR,
-                    5,
-                    Vector3f(3.0f, 3.0f, 3.0f),
-                    0.25,
-                    1.8,
-                    0.25
-                ).uniqueId.toString()
-            }
-        }
-    }
-
-    private fun createItemDisplay(
-        loc: Location,
-        material: Material,
-        customModelData: Int,
-        scale: Vector3f,
-        xOffset: Double,
-        yOffset: Double,
-        zOffset: Double
-    ): ItemDisplay {
-        val itemDisplay = world.spawn(loc.clone().add(xOffset, yOffset, zOffset), ItemDisplay::class.java)
-        val itemStack = ItemStack(material).apply {
-            itemMeta = itemMeta.apply { setCustomModelData(customModelData) }
-        }
-        itemDisplay.transformation = Transformation(
-            Vector3f(0f, 0f, 0f),
-            AxisAngle4f(0f, 0f, 0f, 0f),
-            scale,
-            AxisAngle4f(Math.PI.toFloat(), 0f, 1f, 0f)
-        )
-        itemDisplay.setItemStack(itemStack)
-        return itemDisplay
+        return true
     }
 
     private fun Mine.addResource() {
@@ -577,5 +500,85 @@ object MineManager {
             it.isSpawn = true
             it.enemyUUID = entity.uniqueId.toString()
         }
+    }
+
+
+    private fun removeItemDisplays(mine: Mine) {
+        mine.startBlockLocation?.block?.type = Material.AIR
+        mine.exitBlockLocation?.block?.type = Material.AIR
+        listOf(
+            mine.startBlockUUID,
+            mine.exitBlockUUID,
+            mine.startBlockMarker,
+            mine.exitBlockMarker
+        ).forEach { it?.let { uuid -> getItemDisplayToUUID(uuid)?.remove() } }
+    }
+
+    private fun calculateOffset(floor: Int): Double = ((floor - 1) / 5) * CALCULATE_OFFSET
+
+    private fun generateMines(): List<Mine> {
+        val templates = arrayOf(MineTemplate.M, MineTemplate.N, MineTemplate.R)
+        val types = arrayOf(MineType.A, MineType.B, MineType.C, MineType.D, MineType.E)
+
+        return (1..MAX_MINE_FLOOR).map { floor ->
+            val template = templates[(floor - 1) / 5 % templates.size]
+            val type = types[(floor - 1) % types.size]
+            val zOffset = calculateOffset(floor)
+
+            val mine = Mine(floor, template, type).apply {
+                val startX = type.startX
+                val startY = type.startY
+                val startZ = type.startZ
+                startBlockLocation = Location(world, startX, startY, startZ - zOffset)
+
+                addResource()
+                addEnemyData()
+            }
+            mine
+        }
+    }
+
+    private fun Mine.createItemDisplays(floor: Int, startBlockLocation: Location?) {
+        startBlockLocation?.let { loc ->
+            val marker =
+                createItemDisplay(loc, Material.LEATHER_HORSE_ARMOR, 4, Vector3f(1.75f, 1.75f, 1.75f), 0.2, 5.0, 0.2)
+            marker.billboard = Display.Billboard.VERTICAL
+            startBlockMarker = marker.uniqueId.toString()
+
+            if (floor != 1) {
+                startBlockUUID = createItemDisplay(
+                    loc,
+                    Material.LEATHER_HORSE_ARMOR,
+                    5,
+                    Vector3f(3.0f, 3.0f, 3.0f),
+                    0.25,
+                    1.8,
+                    0.25
+                ).uniqueId.toString()
+            }
+        }
+    }
+
+    private fun createItemDisplay(
+        loc: Location,
+        material: Material,
+        customModelData: Int,
+        scale: Vector3f,
+        xOffset: Double,
+        yOffset: Double,
+        zOffset: Double
+    ): ItemDisplay {
+        val itemDisplay = world.spawn(loc.clone().add(xOffset, yOffset, zOffset), ItemDisplay::class.java)
+        val itemStack = ItemStack(material).apply {
+            itemMeta = itemMeta.apply { setCustomModelData(customModelData) }
+        }
+        itemDisplay.transformation = Transformation(
+            Vector3f(0f, 0f, 0f),
+            AxisAngle4f(0f, 0f, 0f, 0f),
+            scale,
+            AxisAngle4f(Math.PI.toFloat(), 0f, 1f, 0f)
+        )
+        itemDisplay.setItemStack(itemStack)
+        return itemDisplay
     }
 }

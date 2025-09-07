@@ -15,6 +15,7 @@ import org.beobma.stardewvalleyproject.util.Season
 import org.bukkit.Location
 import org.bukkit.Material
 import org.bukkit.block.data.type.Farmland
+import org.bukkit.entity.Player
 import org.bukkit.scheduler.BukkitRunnable
 import org.bukkit.scheduler.BukkitTask
 
@@ -76,6 +77,14 @@ object TimeManager : TimeHandler {
     )
     private fun bossBar() {
         timeBossBar.name(MiniMessage.miniMessage().deserialize("${gameData.day}일 | ${gameData.hour}시 ${gameData.minute}분"))
+    }
+
+    fun showTimeBossBar(player: Player) {
+        timeBossBar.addViewer(player)
+    }
+
+    fun unShowTimeBossBar(player: Player) {
+        timeBossBar.removeViewer(player)
     }
 
     fun endOfDay() {

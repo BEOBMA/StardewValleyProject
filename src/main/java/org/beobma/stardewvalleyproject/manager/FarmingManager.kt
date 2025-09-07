@@ -1,5 +1,6 @@
 package org.beobma.stardewvalleyproject.manager
 
+import kr.eme.semiMission.objects.events.MissionEvent
 import org.beobma.stardewvalleyproject.manager.CustomModelDataManager.getCustomModelData
 import org.beobma.stardewvalleyproject.manager.DataManager.gameData
 import org.beobma.stardewvalleyproject.manager.DataManager.interactionFarmlands
@@ -29,6 +30,7 @@ import org.beobma.stardewvalleyproject.manager.ToolManager.decreaseCustomDurabil
 import org.beobma.stardewvalleyproject.plant.Plant
 import org.beobma.stardewvalleyproject.plant.list.DeadGrassPlant
 import org.beobma.stardewvalleyproject.tool.CapsuleType
+import org.bukkit.Bukkit
 import org.bukkit.Material
 import org.bukkit.Particle
 import org.bukkit.Sound
@@ -136,8 +138,12 @@ object FarmingManager {
 
     private fun Player.wateringCanHandler(block: Block) {
         spawnParticle(Particle.FALLING_WATER, block.location.add(0.5, 0.5, 0.5), 10, 0.1, 0.1, 0.1, 1.0)
+        Bukkit.getPluginManager().callEvent(
+            MissionEvent(this, "FARMING", "farming_module", 1)
+        )
         if (block.type == Material.FARMLAND) updateFarmland(block)
         else updateFarmland(block.getRelative(BlockFace.DOWN))
+
     }
 
     private fun Player.pumpWateringCanHandler(block: Block) {
