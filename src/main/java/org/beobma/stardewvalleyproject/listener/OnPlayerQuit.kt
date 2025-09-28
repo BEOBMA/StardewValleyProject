@@ -3,7 +3,9 @@ package org.beobma.stardewvalleyproject.listener
 import org.beobma.stardewvalleyproject.manager.DataManager.mines
 import org.beobma.stardewvalleyproject.manager.DataManager.playerList
 import org.beobma.stardewvalleyproject.manager.MineManager.leaveMine
+import org.beobma.stardewvalleyproject.manager.TimeManager.showTimeBossBar
 import org.beobma.stardewvalleyproject.manager.TimeManager.timePause
+import org.beobma.stardewvalleyproject.manager.TimeManager.unShowTimeBossBar
 import org.bukkit.Bukkit
 import org.bukkit.Location
 import org.bukkit.event.EventHandler
@@ -17,6 +19,7 @@ class OnPlayerQuit : Listener {
     fun onPlayerQuit(event: PlayerQuitEvent) {
         val player = event.player
         val currentMine = mines.find { it.players.contains(player) }
+        unShowTimeBossBar(player)
         playerList.remove(player)
         if (currentMine != null) {
             currentMine.players.remove(player)

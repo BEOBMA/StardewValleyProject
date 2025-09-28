@@ -9,7 +9,6 @@ import org.bukkit.inventory.ItemStack
 import java.util.*
 
 object PlantManager {
-    // OFFSET은 plantFactories의 size와 같으나, 예외가 있을 수 있음.
     const val PLANT_STAR_ICON_OFFSET: Int = 10
 
     private val plantFactories: MutableMap<Plant, () -> Plant> = mutableMapOf()
@@ -17,6 +16,7 @@ object PlantManager {
     val plantAgIcons: MutableMap<Plant, Int> = mutableMapOf()
     val plantModels: MutableMap<Plant, Int> = mutableMapOf()
 
+    /** 식물 등록 */
     fun Plant.register(clazz: Class<out Plant>, seedIconCustomModelData: Int, agIconCustomModelData: Int, modelData: Int) {
         plantFactories[this] = { clazz.getDeclaredConstructor().newInstance() }
         plantSeedIcons[this] = seedIconCustomModelData
@@ -24,6 +24,7 @@ object PlantManager {
         plantModels[this] = modelData
     }
 
+    /** 씨앗 아이템 생성 */
     fun Plant.getSeedItem(): ItemStack {
         val registeredPlant = getRegisterPlants().find { it.name == name }
         val seedIcon = plantSeedIcons[registeredPlant]
@@ -43,6 +44,7 @@ object PlantManager {
         return itemStack
     }
 
+    /** 수확물 아이템 생성 */
     fun Plant.getHarvestItem(): ItemStack {
         val itemStack = ItemStack(Material.BLACK_DYE, 1).apply {
             itemMeta = itemMeta.apply {
@@ -52,14 +54,17 @@ object PlantManager {
         return itemStack
     }
 
+    /** 인스턴스 생성 */
     fun getPlantInstance(plant: Plant): Plant {
         return plantFactories[plant]!!.invoke()
     }
 
+    /** 등록 식물 목록 */
     fun getRegisterPlants(): List<Plant> {
         return plantFactories.map { it.key }
     }
 
+    /** 아이템 디스플레이 조회 */
     fun Plant.getItemDisplay(): ItemDisplay? {
         val uuid = UUID.fromString(uuidString)
         val entity = Bukkit.getEntity(uuid)

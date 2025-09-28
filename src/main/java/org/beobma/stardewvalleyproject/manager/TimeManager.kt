@@ -39,7 +39,11 @@ object TimeManager : TimeHandler {
 
                 if ((gameData.hour == 22 && gameData.minute == 0) || (gameData.hour == 23 && gameData.minute == 0)) {
                     playerList.forEach { player ->
-                        player.sendActionBar(MiniMessage.miniMessage().deserialize("<bold>곧 12시입니다. 11시 50분까지 홈 모듈로 복귀하지 않으면 강제로 홈 모듈로 이동됩니다."))
+                        player.sendActionBar(
+                            MiniMessage.miniMessage().deserialize(
+                                "<bold>곧 12시입니다. 11시 50분까지 홈 모듈로 복귀하지 않으면 강제로 홈 모듈로 이동됩니다."
+                            )
+                        )
                     }
                 }
 
@@ -66,7 +70,6 @@ object TimeManager : TimeHandler {
             gameData.hour += 1
             gameData.minute = 0
         }
-
         bossBar()
     }
 
@@ -76,18 +79,24 @@ object TimeManager : TimeHandler {
         BossBar.Color.YELLOW,
         BossBar.Overlay.PROGRESS
     )
+
     private fun bossBar() {
-        timeBossBar.name(MiniMessage.miniMessage().deserialize("${gameData.day}일 | ${gameData.hour}시 ${gameData.minute}분"))
+        timeBossBar.name(
+            MiniMessage.miniMessage().deserialize("${gameData.day}일 | ${gameData.hour}시 ${gameData.minute}분")
+        )
     }
 
+    /** 보스바 표시 추가 */
     fun showTimeBossBar(player: Player) {
         timeBossBar.addViewer(player)
     }
 
+    /** 보스바 표시 제거 */
     fun unShowTimeBossBar(player: Player) {
         timeBossBar.removeViewer(player)
     }
 
+    /** 하루 종료 처리: 날짜 증가, 시간 초기화, 타이머 일시정지, 작물 성장 처리, 경작지 수분 초기화, 광산 갱신, 타이머 재개 */
     fun endOfDay() {
         gameData.day++
         gameData.hour = 0
@@ -97,24 +106,24 @@ object TimeManager : TimeHandler {
 
         val blocksToDry = hashSetOf<Location>()
 
-        interactionFarmlands.forEach { block ->
-            val farmland = block.block.blockData as? Farmland ?: return@forEach
-            val plant = plantList.find { it.farmlandLocation == block.block.location }
+        interactionFarmlands.forEach { loc ->
+            val farmland = loc.block.blockData as? Farmland ?: return@forEach
+            val plant = plantList.find { it.farmlandLocation == loc.block.location }
 
             if (plant is DeadGrassPlant) return@forEach
             if (plant !is Plant && farmland.moisture != farmland.maximumMoisture) {
-                block.block.type = Material.DIRT
-                blocksToDry.add(block)
+                loc.block.type = Material.DIRT
+                blocksToDry.add(loc)
                 return@forEach
             }
 
             farmland.moisture = 0
-            block.block.blockData = farmland
+            loc.block.blockData = farmland
         }
 
         interactionFarmlands.removeAll(blocksToDry)
 
-        // 모든 플레이어 홈 모듈로 이동.
+        // 모든 플레이어 홈 모듈 이동
         nextDay()
         timePlay()
     }

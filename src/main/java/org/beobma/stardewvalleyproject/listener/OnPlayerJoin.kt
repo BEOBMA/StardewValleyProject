@@ -5,6 +5,7 @@ import org.beobma.stardewvalleyproject.manager.DataManager.playerList
 import org.beobma.stardewvalleyproject.manager.MineManager.showMineFloorSelector
 import org.beobma.stardewvalleyproject.manager.PlantManager.getRegisterPlants
 import org.beobma.stardewvalleyproject.manager.PlantManager.getSeedItem
+import org.beobma.stardewvalleyproject.manager.TimeManager.showTimeBossBar
 import org.beobma.stardewvalleyproject.manager.TimeManager.timeBossBar
 import org.beobma.stardewvalleyproject.manager.TimeManager.timePlay
 import org.beobma.stardewvalleyproject.tool.Capsule
@@ -21,7 +22,7 @@ class OnPlayerJoin : Listener {
         val player = event.player
         playerList.add(player)
         gameData.maxMineFloor = 60
-        player.showBossBar(timeBossBar)
+        showTimeBossBar(player)
         timePlay()
         player.inventory.run {
             Hoe().hoes.forEach {
