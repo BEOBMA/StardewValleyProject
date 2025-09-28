@@ -1,6 +1,7 @@
 package org.beobma.stardewvalleyproject.manager
 
 import net.kyori.adventure.bossbar.BossBar
+import net.kyori.adventure.text.format.ShadowColor
 import net.kyori.adventure.text.minimessage.MiniMessage
 import org.beobma.stardewvalleyproject.StardewValley
 import org.beobma.stardewvalleyproject.manager.DataManager.gameData
@@ -70,7 +71,7 @@ object TimeManager : TimeHandler {
     }
 
     var timeBossBar: BossBar = BossBar.bossBar(
-        MiniMessage.miniMessage().deserialize("보스바"),
+        MiniMessage.miniMessage().deserialize("보스바").shadowColor(ShadowColor.shadowColor(0x00FFFFFF)),
         1.0f,
         BossBar.Color.YELLOW,
         BossBar.Overlay.PROGRESS

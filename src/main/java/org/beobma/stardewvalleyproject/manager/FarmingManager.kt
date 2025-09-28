@@ -2,7 +2,6 @@ package org.beobma.stardewvalleyproject.manager
 
 import kr.eme.semiMission.objects.events.MissionEvent
 import org.beobma.stardewvalleyproject.manager.CustomModelDataManager.getCustomModelData
-import org.beobma.stardewvalleyproject.manager.DataManager.gameData
 import org.beobma.stardewvalleyproject.manager.DataManager.interactionFarmlands
 import org.beobma.stardewvalleyproject.manager.DataManager.plantList
 import org.beobma.stardewvalleyproject.manager.PlantManager.PLANT_STAR_ICON_OFFSET
@@ -28,7 +27,6 @@ import org.beobma.stardewvalleyproject.manager.ToolManager.WATERINGCAN_CUSTOM_MO
 import org.beobma.stardewvalleyproject.manager.ToolManager.WEED_KILLER_CAPSULE_MODEL_DATA
 import org.beobma.stardewvalleyproject.manager.ToolManager.decreaseCustomDurability
 import org.beobma.stardewvalleyproject.plant.Plant
-import org.beobma.stardewvalleyproject.plant.list.DeadGrassPlant
 import org.beobma.stardewvalleyproject.tool.CapsuleType
 import org.bukkit.Bukkit
 import org.bukkit.Material
@@ -69,16 +67,20 @@ object FarmingManager {
         mainHandItem.decreaseCustomDurability(1, this)
     }
 
-    private fun convertToFarmland(block: Block) {
+    private fun Player.convertToFarmland(block: Block) {
         block.type = Material.FARMLAND
         interactionFarmlands.add(block.location)
+
+        Bukkit.getPluginManager().callEvent(
+            MissionEvent(this, "PLAYER_PROGRESS", "mine_module", 1)
+        )
     }
 
-    private fun durableHoeHandler(block: Block) {
+    private fun Player.durableHoeHandler(block: Block) {
         convertToFarmland(block)
     }
 
-    private fun lightAndSturdyHoeHandler(block: Block) {
+    private fun Player.lightAndSturdyHoeHandler(block: Block) {
         val origin = block.location.clone()
         for ((dx, dz) in NEIGHBOR_OFFSETS) {
             val targetBlock = origin.clone().add(dx.toDouble(), 0.0, dz.toDouble()).block
@@ -88,7 +90,7 @@ object FarmingManager {
         }
     }
 
-    private fun autoHoeHandelr(block: Block, player: Player) {
+    private fun Player.autoHoeHandelr(block: Block, player: Player) {
         val registeredPlants = getRegisterPlants()
         val origin = block.location.clone()
         val offHandItem = player.inventory.itemInOffHand
@@ -321,10 +323,9 @@ object FarmingManager {
         if (plantStatus.isHarvestComplete) return
 
         val world = farmlandBlock.world
-        val location = farmlandBlock
-        val baseX = location.blockX
-        val baseY = location.blockY
-        val baseZ = location.blockZ
+        val baseX = farmlandBlock.blockX
+        val baseY = farmlandBlock.blockY
+        val baseZ = farmlandBlock.blockZ
 
         var weedFound = false
         var nonWeedFound = false

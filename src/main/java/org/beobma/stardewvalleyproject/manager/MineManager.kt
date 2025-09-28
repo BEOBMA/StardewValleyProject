@@ -114,6 +114,12 @@ object MineManager {
                 MissionEvent(this, "PLAYER_PROGRESS", "mine_module", 1)
             )
         }
+
+        if (nextMine.floor >= 40) {
+            Bukkit.getPluginManager().callEvent(
+                MissionEvent(this, "PLAYER_PROGRESS", "mine_module", 1)
+            )
+        }
         this.teleport(target)
         nextMine.spawnVisuals()
         return true
@@ -258,6 +264,10 @@ object MineManager {
                     setCustomModelData(resource.resourcesType.customModelData)
                 }
             }
+
+            Bukkit.getPluginManager().callEvent(
+                MissionEvent(this, "PLAYER_PROGRESS", "mine_module", 1)
+            )
 
             resource.getItemDisplay()?.remove()
 
