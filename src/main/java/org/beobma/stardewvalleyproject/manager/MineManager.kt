@@ -1,6 +1,7 @@
 package org.beobma.stardewvalleyproject.manager
 
-import kr.eme.semiMission.objects.events.MissionEvent
+import kr.eme.semiMission.api.events.MissionEvent
+import kr.eme.semiMission.enums.MissionVersion
 import net.kyori.adventure.text.minimessage.MiniMessage
 import org.beobma.stardewvalleyproject.StardewValley
 import org.beobma.stardewvalleyproject.entity.Enemy
@@ -112,7 +113,9 @@ object MineManager {
         }
 
         // 미션 트리거
-        Bukkit.getPluginManager().callEvent(MissionEvent(this, "PLAYER_PROGRESS", "mine_module", nextMine.floor))
+        Bukkit.getPluginManager().callEvent(
+            MissionEvent(this, MissionVersion.V2, "PLAYER_PROGRESS", "mine_module", nextMine.floor)
+        )
 
 
         this.teleport(target)
@@ -258,7 +261,9 @@ object MineManager {
                 }
             }
 
-            Bukkit.getPluginManager().callEvent(MissionEvent(this, "PLAYER_PROGRESS", "mine_module", 1))
+            Bukkit.getPluginManager().callEvent(
+                MissionEvent(this, MissionVersion.V2, "PLAYER_PROGRESS", "mine_module", 1)
+            )
 
             resource.getItemDisplay()?.remove()
 

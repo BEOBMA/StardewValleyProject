@@ -1,6 +1,7 @@
 package org.beobma.stardewvalleyproject.listener
 
-import kr.eme.semiMission.objects.events.MissionEvent
+import kr.eme.semiMission.api.events.MissionEvent
+import kr.eme.semiMission.enums.MissionVersion
 import org.beobma.stardewvalleyproject.manager.DataManager.mines
 import org.bukkit.Bukkit
 import org.bukkit.event.EventHandler
@@ -16,7 +17,7 @@ class OnEntityDeath : Listener {
         val enemy = mine.enemys.find { it.enemyUUID == entity.uniqueId.toString() } ?: return
 
         Bukkit.getPluginManager().callEvent(
-            MissionEvent(player, "PLAYER_PROGRESS", "mine_module", 1)
+            MissionEvent(player, MissionVersion.V2,"PLAYER_PROGRESS", "mine_module", 1)
         )
 
 

@@ -5,7 +5,8 @@ import io.papermc.paper.datacomponent.item.Consumable
 import io.papermc.paper.datacomponent.item.FoodProperties
 import io.papermc.paper.datacomponent.item.consumable.ConsumeEffect
 import io.papermc.paper.datacomponent.item.consumable.ItemUseAnimation
-import kr.eme.semiMission.objects.events.MissionEvent
+import kr.eme.semiMission.api.events.MissionEvent
+import kr.eme.semiMission.enums.MissionVersion
 import org.beobma.stardewvalleyproject.manager.CustomModelDataManager.getCustomModelData
 import org.beobma.stardewvalleyproject.manager.DataManager.interactionFarmlands
 import org.beobma.stardewvalleyproject.manager.DataManager.plantList
@@ -127,7 +128,9 @@ object FarmingManager {
 
     /** 미션 */
     private fun Player.fireMission(type: String, module: String, value: Int = 1) {
-        Bukkit.getPluginManager().callEvent(MissionEvent(this, type, module, value))
+        Bukkit.getPluginManager().callEvent(
+            MissionEvent(this, MissionVersion.V2, type, module, value)
+        )
     }
 
     /** 밭 갈기 */
