@@ -278,77 +278,22 @@ object FarmingManager {
             val item = plant.getHarvestItem()
             val finalCmd = rollQualityCmd(baseCmd, iridiumChance, goldChance, plant)
             item.itemMeta = item.itemMeta.apply { setCustomModelData(finalCmd) }
-            val eatablePlants = registered as EatablePlants
+            val eatablePlants = registered as? EatablePlants ?: return
+            val quality = plant.quality ?: EatablePlants.QUALITY_SILVER
 
-            val food: FoodProperties = when (plant.quality) {
-                0 -> {
-                    FoodProperties.food()
-                        .nutrition(eatablePlants.silverNutrition)
-                        .saturation(eatablePlants.silverSaturation)
-                        .build()
-                }
-                1 -> {
-                    FoodProperties.food()
-                        .nutrition(eatablePlants.goldNutrition)
-                        .saturation(eatablePlants.goldSaturation)
-                        .build()
-                }
-                2 -> {
-                    FoodProperties.food()
-                        .nutrition(eatablePlants.titaniumNutrition)
-                        .saturation(eatablePlants.titaniumSaturation)
-                        .build()
-                }
-
-                else -> {
-                    FoodProperties.food()
-                        .nutrition(eatablePlants.silverNutrition)
-                        .saturation(eatablePlants.silverSaturation)
-                        .build()
-                }
-            }
-            val consumable: Consumable = when (plant.quality) {
-                0 -> {
-                    val applyEffects: ConsumeEffect.ApplyStatusEffects =
-                        ConsumeEffect.applyStatusEffects(eatablePlants.silverEffects, 1.0f)
-                    Consumable.consumable()
-                        .consumeSeconds(eatablePlants.silverConsumeSeconds)
-                        .animation(ItemUseAnimation.EAT)
-                        .addEffect(applyEffects)
-                        .build()
-                }
-                1 -> {
-                    val applyEffects: ConsumeEffect.ApplyStatusEffects =
-                        ConsumeEffect.applyStatusEffects(eatablePlants.goldEffects, 1.0f)
-                    Consumable.consumable()
-                        .consumeSeconds(eatablePlants.goldConsumeSeconds)
-                        .animation(ItemUseAnimation.EAT)
-                        .addEffect(applyEffects)
-                        .build()
-                }
-                2 -> {
-                    val applyEffects: ConsumeEffect.ApplyStatusEffects =
-                        ConsumeEffect.applyStatusEffects(eatablePlants.titaniumEffects, 1.0f)
-                    Consumable.consumable()
-                        .consumeSeconds(eatablePlants.titaniumConsumeSeconds)
-                        .animation(ItemUseAnimation.EAT)
-                        .addEffect(applyEffects)
-                        .build()
-                }
-
-                else -> {
-                    val applyEffects: ConsumeEffect.ApplyStatusEffects =
-                        ConsumeEffect.applyStatusEffects(eatablePlants.silverEffects, 1.0f)
-                    Consumable.consumable()
-                        .consumeSeconds(eatablePlants.silverConsumeSeconds)
-                        .animation(ItemUseAnimation.EAT)
-                        .addEffect(applyEffects)
-                        .build()
-                }
-            }
+            val food = FoodProperties.food()
+                .nutrition(eatablePlants.getNutrition(quality))
+                .saturation(eatablePlants.getSaturation(quality))
+                .build()
+            val effects = eatablePlants.getEffects(quality)
+            val consumable = Consumable.consumable()
+                .consumeSeconds(eatablePlants.getConsumeSeconds(quality))
+                .animation(ItemUseAnimation.EAT)
+                .addEffect(ConsumeEffect.applyStatusEffects(effects, 1.0f))
+                .build()
 
             item.setData(DataComponentTypes.FOOD, food)
-            item.setData(DataComponentTypes.CONSUMABLE,consumable)
+            item.setData(DataComponentTypes.CONSUMABLE, consumable)
 
             inventory.addItem(item)
         }
