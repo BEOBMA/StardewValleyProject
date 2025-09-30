@@ -1,5 +1,10 @@
 package org.beobma.stardewvalleyproject.manager
 
+import io.papermc.paper.datacomponent.DataComponentTypes
+import io.papermc.paper.datacomponent.item.Consumable
+import io.papermc.paper.datacomponent.item.FoodProperties
+import io.papermc.paper.datacomponent.item.consumable.ConsumeEffect
+import io.papermc.paper.datacomponent.item.consumable.ItemUseAnimation
 import kr.eme.semiMission.objects.events.MissionEvent
 import org.beobma.stardewvalleyproject.manager.CustomModelDataManager.getCustomModelData
 import org.beobma.stardewvalleyproject.manager.DataManager.interactionFarmlands
@@ -26,6 +31,7 @@ import org.beobma.stardewvalleyproject.manager.ToolManager.WATERINGCAN_CUSTOM_MO
 import org.beobma.stardewvalleyproject.manager.ToolManager.WATERINGCAN_CUSTOM_MODEL_DATAS
 import org.beobma.stardewvalleyproject.manager.ToolManager.WEED_KILLER_CAPSULE_MODEL_DATA
 import org.beobma.stardewvalleyproject.manager.ToolManager.decreaseCustomDurability
+import org.beobma.stardewvalleyproject.plant.EatablePlants
 import org.beobma.stardewvalleyproject.plant.Plant
 import org.beobma.stardewvalleyproject.tool.CapsuleType
 import org.bukkit.Bukkit
@@ -101,12 +107,21 @@ object FarmingManager {
     }
 
     /** 수확물 품질(일반/금/이리듐) */
-    private fun rollQualityCmd(base: Int, iridiumChance: Int, goldChance: Int): Int {
+    private fun rollQualityCmd(base: Int, iridiumChance: Int, goldChance: Int, plant: Plant): Int {
         val r = Random.nextInt(1, 101)
         return when {
-            r <= iridiumChance              -> base + (PLANT_STAR_ICON_OFFSET * 2)
-            r <= iridiumChance + goldChance -> base + (PLANT_STAR_ICON_OFFSET)
-            else                            -> base
+            r <= iridiumChance              -> {
+                plant.quality = 2
+                base + (PLANT_STAR_ICON_OFFSET * 2)
+            }
+            r <= iridiumChance + goldChance -> {
+                plant.quality = 1
+                base + (PLANT_STAR_ICON_OFFSET)
+            }
+            else                            -> {
+                plant.quality = 0
+                base
+            }
         }
     }
 
@@ -261,8 +276,80 @@ object FarmingManager {
 
         fun addOneHarvest() {
             val item = plant.getHarvestItem()
-            val finalCmd = rollQualityCmd(baseCmd, iridiumChance, goldChance)
+            val finalCmd = rollQualityCmd(baseCmd, iridiumChance, goldChance, plant)
             item.itemMeta = item.itemMeta.apply { setCustomModelData(finalCmd) }
+            val eatablePlants = registered as EatablePlants
+
+            val food: FoodProperties = when (plant.quality) {
+                0 -> {
+                    FoodProperties.food()
+                        .nutrition(eatablePlants.silverNutrition)
+                        .saturation(eatablePlants.silverSaturation)
+                        .build()
+                }
+                1 -> {
+                    FoodProperties.food()
+                        .nutrition(eatablePlants.goldNutrition)
+                        .saturation(eatablePlants.goldSaturation)
+                        .build()
+                }
+                2 -> {
+                    FoodProperties.food()
+                        .nutrition(eatablePlants.titaniumNutrition)
+                        .saturation(eatablePlants.titaniumSaturation)
+                        .build()
+                }
+
+                else -> {
+                    FoodProperties.food()
+                        .nutrition(eatablePlants.silverNutrition)
+                        .saturation(eatablePlants.silverSaturation)
+                        .build()
+                }
+            }
+            val consumable: Consumable = when (plant.quality) {
+                0 -> {
+                    val applyEffects: ConsumeEffect.ApplyStatusEffects =
+                        ConsumeEffect.applyStatusEffects(eatablePlants.silverEffects, 1.0f)
+                    Consumable.consumable()
+                        .consumeSeconds(eatablePlants.silverConsumeSeconds)
+                        .animation(ItemUseAnimation.EAT)
+                        .addEffect(applyEffects)
+                        .build()
+                }
+                1 -> {
+                    val applyEffects: ConsumeEffect.ApplyStatusEffects =
+                        ConsumeEffect.applyStatusEffects(eatablePlants.goldEffects, 1.0f)
+                    Consumable.consumable()
+                        .consumeSeconds(eatablePlants.goldConsumeSeconds)
+                        .animation(ItemUseAnimation.EAT)
+                        .addEffect(applyEffects)
+                        .build()
+                }
+                2 -> {
+                    val applyEffects: ConsumeEffect.ApplyStatusEffects =
+                        ConsumeEffect.applyStatusEffects(eatablePlants.titaniumEffects, 1.0f)
+                    Consumable.consumable()
+                        .consumeSeconds(eatablePlants.titaniumConsumeSeconds)
+                        .animation(ItemUseAnimation.EAT)
+                        .addEffect(applyEffects)
+                        .build()
+                }
+
+                else -> {
+                    val applyEffects: ConsumeEffect.ApplyStatusEffects =
+                        ConsumeEffect.applyStatusEffects(eatablePlants.silverEffects, 1.0f)
+                    Consumable.consumable()
+                        .consumeSeconds(eatablePlants.silverConsumeSeconds)
+                        .animation(ItemUseAnimation.EAT)
+                        .addEffect(applyEffects)
+                        .build()
+                }
+            }
+
+            item.setData(DataComponentTypes.FOOD, food)
+            item.setData(DataComponentTypes.CONSUMABLE,consumable)
+
             inventory.addItem(item)
         }
 

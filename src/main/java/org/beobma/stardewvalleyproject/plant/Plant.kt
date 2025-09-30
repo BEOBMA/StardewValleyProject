@@ -16,5 +16,6 @@ open class Plant(
     @Serializable(with = LocationSerializer::class)
     var farmlandLocation: Location? = null,
     val plantStatus: PlantStatus = PlantStatus(),
-    var uuidString: String? = null
+    var uuidString: String? = null,
+    var quality: Int? = null
 )
