@@ -172,8 +172,9 @@ class OnPlayerInteract : Listener {
         if (!status.isPlant) return
 
         val main = item
+        val off = player.inventory.itemInOffHand
         val mainCmd = main?.getCustomModelData()
-        val offCmd = player.inventory.itemInOffHand.getCustomModelData()
+        val offCmd = off.getCustomModelData()
         val registered = getRegisterPlants()
             .find { it.getSeedItem().getCustomModelData() == plant.getSeedItem().getCustomModelData() }
 
@@ -195,20 +196,20 @@ class OnPlayerInteract : Listener {
             return
         }
 
+        // 캡슐 상호작용
+        if (off.type == Material.SADDLE) {
+            val canShoot = mainCmd == CAPSULEGUN_CUSTOM_MODEL_DATA &&
+                    status.capsuleType == CapsuleType.None &&
+                    offCmd in CAPSULE_MODEL_DATAS
+            if (canShoot) player.capsule(plant)
+            return
+        }
+
         // 관개 상호작용
         if (main.type == Material.WOODEN_SHOVEL) {
             if (mainCmd in WATERINGCAN_CUSTOM_MODEL_DATAS && !plant.isWatering()) {
                 player.watering(block)
             }
-            return
-        }
-
-        // 캡슐 상호작용
-        if (main.type == Material.SADDLE) {
-            val canShoot = mainCmd == CAPSULEGUN_CUSTOM_MODEL_DATA &&
-                    status.capsuleType == CapsuleType.None &&
-                    offCmd in CAPSULE_MODEL_DATAS
-            if (canShoot) player.capsule(plant)
             return
         }
     }
