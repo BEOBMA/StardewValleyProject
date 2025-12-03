@@ -114,8 +114,9 @@ object MineManager {
 
         // 미션 트리거
         Bukkit.getPluginManager().callEvent(
-            MissionEvent(this, MissionVersion.V2, "PLAYER_PROGRESS", "mine_module", nextMine.floor)
+            MissionEvent(this, MissionVersion.V1, "PLAYER_PROGRESS", "mine_module", nextMine.floor)
         )
+
 
 
         this.teleport(target)

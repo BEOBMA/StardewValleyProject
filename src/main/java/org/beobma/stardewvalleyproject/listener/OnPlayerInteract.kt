@@ -154,6 +154,10 @@ class OnPlayerInteract : Listener {
     /** 광산 상호작용 처리 */
     private fun handleMine(player: Player, block: Block) {
         val mine = mines.find { it.players.contains(player) } ?: return
+        if (player.inventory.itemInMainHand.type == Material.NETHERITE_INGOT) {
+            player.approach(mine, mine.floor + 1)
+            return
+        }
         when (block) {
             mine.exitBlockLocation?.block -> player.approach(mine, mine.floor + 1)
             mine.startBlockLocation?.block -> player.approach(mine, mine.floor - 1, true)
