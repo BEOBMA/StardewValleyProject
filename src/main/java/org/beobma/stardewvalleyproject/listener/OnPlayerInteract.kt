@@ -27,11 +27,13 @@ import org.beobma.stardewvalleyproject.manager.ToolManager.decreaseCustomDurabil
 import org.beobma.stardewvalleyproject.manager.ToolManager.getCurrentCustomDurability
 import org.beobma.stardewvalleyproject.plant.Plant
 import org.beobma.stardewvalleyproject.tool.CapsuleType
+import org.bukkit.Bukkit.getEntity
 import org.bukkit.Material
 import org.bukkit.NamespacedKey
 import org.bukkit.block.Block
 import org.bukkit.entity.Interaction
 import org.bukkit.entity.ItemDisplay
+import org.bukkit.entity.LivingEntity
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
@@ -42,6 +44,8 @@ import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.inventory.EquipmentSlot
 import org.bukkit.inventory.ItemStack
 import org.bukkit.persistence.PersistentDataType
+import java.util.UUID
+import kotlin.math.min
 
 class OnPlayerInteract : Listener {
 
@@ -156,6 +160,14 @@ class OnPlayerInteract : Listener {
         val mine = mines.find { it.players.contains(player) } ?: return
         if (player.inventory.itemInMainHand.type == Material.NETHERITE_INGOT) {
             player.approach(mine, mine.floor + 1)
+            return
+        }
+        if (player.inventory.itemInMainHand.type == Material.NETHERITE_SWORD) {
+            mine.enemys.forEach { enemy ->
+                val uuid = UUID.fromString(enemy.enemyUUID)
+                val entity = getEntity(uuid) as? LivingEntity
+                entity?.damage(9999.9)
+            }
             return
         }
         when (block) {
