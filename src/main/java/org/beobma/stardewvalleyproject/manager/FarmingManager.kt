@@ -127,9 +127,9 @@ object FarmingManager {
     }
 
     /** 미션 */
-    private fun Player.fireMission(type: String, module: String, value: Int = 1) {
+    private fun Player.fireMission(missionVersion: MissionVersion, type: String, module: String, value: Int = 1) {
         Bukkit.getPluginManager().callEvent(
-            MissionEvent(this, MissionVersion.V2, type, module, value)
+            MissionEvent(this, missionVersion, type, module, value)
         )
     }
 
@@ -155,7 +155,7 @@ object FarmingManager {
     private fun Player.convertToFarmland(block: Block) {
         block.type = Material.FARMLAND
         interactionFarmlands.add(block.location)
-        fireMission("PLAYER_PROGRESS", "mine_module", 1)
+        fireMission(MissionVersion.V2, "PLAYER_PROGRESS", "mine_module", 1)
     }
 
     /** 자동화 괭이 */
@@ -186,12 +186,13 @@ object FarmingManager {
         when (cmd) {
             WATERINGCAN_CUSTOM_MODEL_DATA -> {
                 spawnParticle(Particle.FALLING_WATER, block.location.add(0.5, 0.5, 0.5), WATER_PARTICLE, 0.1, 0.1, 0.1, 1.0)
-                fireMission("FARMING", "farming_module", 1)
+                fireMission(MissionVersion.V1,"FARMING", "farming_module", 1)
                 moistenFarmland(block)
             }
             PUMP_WATERINGCAN_CUSTOM_MODEL_DATA -> {
                 forEach3x3(block) { b ->
                     spawnParticle(Particle.FALLING_WATER, b.location.add(0.5, 0.5, 0.5), WATER_PARTICLE, 0.1, 0.1, 0.1, 1.0)
+                    fireMission(MissionVersion.V1,"FARMING", "farming_module", 1)
                     moistenFarmland(b)
                 }
             }
