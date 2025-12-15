@@ -155,7 +155,9 @@ object FarmingManager {
     private fun Player.convertToFarmland(block: Block) {
         block.type = Material.FARMLAND
         interactionFarmlands.add(block.location)
-        fireMission(MissionVersion.V2, "PLAYER_PROGRESS", "mine_module", 1)
+        fireMission(MissionVersion.V2, "PLAYER_PROGRESS", "farming_module", 1)
+        // 300회 경작 미션 문제
+        // 300회 카운트를 어느 플러그인에서 해야할지.
     }
 
     /** 자동화 괭이 */
@@ -337,6 +339,9 @@ object FarmingManager {
             playSound(it, Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f)
         }
         if (off.amount > 0) off.amount -= 1
+
+        // 미션
+        fireMission(MissionVersion.V2, "FARMING", "farming_module", 1)
     }
 
     /** 물 주기 여부 */
