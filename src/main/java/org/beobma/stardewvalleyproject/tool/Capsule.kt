@@ -25,7 +25,7 @@ class Capsule {
                 MiniMessage.miniMessage().deserialize("<gray>제초제 성분이 담긴 캡슐, 식물에 사용하면 잡초와 관계 없이 자라난다.")
             )
         )
-        meta.setCustomModelData(38)
+        meta.setCustomModelData(11)
         itemMeta = meta
     }
 
@@ -37,7 +37,7 @@ class Capsule {
                 MiniMessage.miniMessage().deserialize("<gray>성장 촉진제 성분이 담긴 캡슐, 식물에 사용하면 수확일 까지 시간을 줄여준다.")
             )
         )
-        meta.setCustomModelData(39)
+        meta.setCustomModelData(10)
         itemMeta = meta
     }
 
@@ -49,7 +49,7 @@ class Capsule {
                 MiniMessage.miniMessage().deserialize("<gray>비료 성분이 담긴 캡슐, 식물에 사용하면 더 높은 등급의 작물이 나올 확률이 증가한다.")
             )
         )
-        meta.setCustomModelData(40)
+        meta.setCustomModelData(11)
         itemMeta = meta
     }
 
