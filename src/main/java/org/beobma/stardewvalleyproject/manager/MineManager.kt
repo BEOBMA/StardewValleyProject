@@ -22,6 +22,7 @@ import org.beobma.stardewvalleyproject.resource.ResourceType.*
 import org.bukkit.*
 import org.bukkit.block.Block
 import org.bukkit.entity.Display
+import org.bukkit.entity.Entity
 import org.bukkit.entity.EntityType
 import org.bukkit.entity.ItemDisplay
 import org.bukkit.entity.Player
@@ -531,12 +532,24 @@ object MineManager {
 
                 }
             }
+            val entity = getMarkerNearbyEntity(marker)
+
             marker.remove()
-            // 광산 엔티티를 함수로 소환하여, 해당 엔티티에 접근할 수 없음.
-            // 해당 문제를 해결하지 않으면 광산 진입 시에만 엔티티를 소환하거나, 데이터를 저장하는 기능에 문제가 발생함.
-//            it.isSpawn = true
-//            it.enemyUUID = entity.uniqueId.toString()
+
+            if (entity == null) return@forEach
+            it.isSpawn = true
+            it.enemyUUID = entity.uniqueId.toString()
         }
+    }
+
+    /** 마커 범위 내에 소환된 엔티티 반환 */
+    private fun getMarkerNearbyEntity(marker: Entity): Entity? {
+        for (entity in marker.world.getNearbyEntities(marker.location, 1.0, 1.0, 1.0)) {
+            if (entity.scoreboardTags.contains("aj.zombie.root")) {
+                return entity
+            }
+        }
+        return null
     }
 
     /** 아이템 디스플레이 제거 */
