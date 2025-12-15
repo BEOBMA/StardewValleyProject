@@ -17,7 +17,7 @@ class Capsule {
         itemMeta = meta
     }
 
-    val weedKillerCapsule = ItemStack(Material.SADDLE, 1).apply {
+    val weedKillerCapsule = ItemStack(Material.ORANGE_DYE, 1).apply {
         val meta = itemMeta ?: return@apply
         meta.displayName(MiniMessage.miniMessage().deserialize("제초 캡슐"))
         meta.lore(
@@ -25,11 +25,11 @@ class Capsule {
                 MiniMessage.miniMessage().deserialize("<gray>제초제 성분이 담긴 캡슐, 식물에 사용하면 잡초와 관계 없이 자라난다.")
             )
         )
-        meta.setCustomModelData(11)
+        meta.setCustomModelData(2)
         itemMeta = meta
     }
 
-    val growthCapsule = ItemStack(Material.SADDLE, 1).apply {
+    val growthCapsule = ItemStack(Material.ORANGE_DYE, 1).apply {
         val meta = itemMeta ?: return@apply
         meta.displayName(MiniMessage.miniMessage().deserialize("성장 캡슐"))
         meta.lore(
@@ -37,11 +37,11 @@ class Capsule {
                 MiniMessage.miniMessage().deserialize("<gray>성장 촉진제 성분이 담긴 캡슐, 식물에 사용하면 수확일 까지 시간을 줄여준다.")
             )
         )
-        meta.setCustomModelData(10)
+        meta.setCustomModelData(3)
         itemMeta = meta
     }
 
-    val nutrientCapsule = ItemStack(Material.SADDLE, 1).apply {
+    val nutrientCapsule = ItemStack(Material.ORANGE_DYE, 1).apply {
         val meta = itemMeta ?: return@apply
         meta.displayName(MiniMessage.miniMessage().deserialize("영양 캡슐"))
         meta.lore(
@@ -49,7 +49,7 @@ class Capsule {
                 MiniMessage.miniMessage().deserialize("<gray>비료 성분이 담긴 캡슐, 식물에 사용하면 더 높은 등급의 작물이 나올 확률이 증가한다.")
             )
         )
-        meta.setCustomModelData(11)
+        meta.setCustomModelData(4)
         itemMeta = meta
     }
 
