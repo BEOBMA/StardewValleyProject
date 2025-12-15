@@ -166,7 +166,7 @@ class OnPlayerInteract : Listener {
             mine.enemys.forEach { enemy ->
                 val uuid = UUID.fromString(enemy.enemyUUID)
                 val entity = getEntity(uuid) as? LivingEntity
-                entity?.damage(9999.9)
+                entity?.damage(9999.9, player)
             }
             return
         }

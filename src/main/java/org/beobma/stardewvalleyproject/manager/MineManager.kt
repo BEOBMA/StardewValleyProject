@@ -26,6 +26,7 @@ import org.bukkit.entity.Entity
 import org.bukkit.entity.EntityType
 import org.bukkit.entity.ItemDisplay
 import org.bukkit.entity.Player
+import org.bukkit.entity.minecart.CommandMinecart
 import org.bukkit.inventory.ItemStack
 import org.bukkit.util.Transformation
 import org.joml.AxisAngle4f
@@ -501,51 +502,54 @@ object MineManager {
     /** 적 스폰 실행 */
     fun Mine.spawnEnemysMine() {
         enemys.filter { !it.isSpawn && !it.isDead }.forEach {
-            val marker = world.spawnEntity(it.location, EntityType.MARKER)
             val random = Random.nextInt(1, 3)
             when (it.entityType) {
                 EntityType.DROWNED -> {
                     if (random == 1) {
-                        Bukkit.getServer().dispatchCommand(marker, "function zombie:magma_zombie_summon")
+                        runCommand(it.location, "function zombie:magma_zombie_summon")
                     }
                     else {
-                        Bukkit.getServer().dispatchCommand(marker, "function zombie:magma_spaceman_zombie_summon")
+                        runCommand(it.location, "function zombie:mamga_spaceman_zombie_summon")
                     }
                 }
                 EntityType.HUSK -> {
                     if (random == 1) {
-                        Bukkit.getServer().dispatchCommand(marker, "function zombie:nature_zombie_summon")
+                        runCommand(it.location, "function zombie:nature_zombie_summon")
                     }
                     else {
-                        Bukkit.getServer().dispatchCommand(marker, "function zombie:nature_spaceman_zombie_summon")
+                        runCommand(it.location, "function zombie:nature_spaceman_zombie_summon")
                     }
                 }
                 EntityType.ZOMBIE -> {
                     if (random == 1) {
-                        Bukkit.getServer().dispatchCommand(marker, "function zombie:rock_zombie_summon")
+                        runCommand(it.location, "function zombie:rock_zombie_summon")
                     }
                     else {
-                        Bukkit.getServer().dispatchCommand(marker, "function zombie:rock_spaceman_zombie_summon")
+                        runCommand(it.location, "function zombie:rock_spaceman_zombie_summon")
                     }
                 }
                 else -> {
 
                 }
             }
-            val entity = getMarkerNearbyEntity(marker)
-
-            marker.remove()
-
-            if (entity == null) return@forEach
+            val entity = getMarkerNearbyLocation(it.location) ?: return@forEach
             it.isSpawn = true
             it.enemyUUID = entity.uniqueId.toString()
         }
     }
 
+    private fun runCommand(location: Location, command: String) {
+        location.world.spawn(location, CommandMinecart::class.java) { entity ->
+            entity.setCommand(command)
+            Bukkit.getServer().dispatchCommand(entity, command) // "/" 없이
+            entity.remove()
+        }
+    }
+
     /** 마커 범위 내에 소환된 엔티티 반환 */
-    private fun getMarkerNearbyEntity(marker: Entity): Entity? {
-        for (entity in marker.world.getNearbyEntities(marker.location, 1.0, 1.0, 1.0)) {
-            if (entity.scoreboardTags.contains("aj.zombie.root")) {
+    private fun getMarkerNearbyLocation(location: Location): Entity? {
+        for (entity in location.world.getNearbyEntities(location, 2.0, 2.0, 2.0)) {
+            if (entity.scoreboardTags.contains("semi.zombie")) {
                 return entity
             }
         }
