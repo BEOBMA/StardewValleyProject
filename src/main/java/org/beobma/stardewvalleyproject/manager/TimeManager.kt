@@ -20,18 +20,10 @@ import org.bukkit.entity.Player
 import org.bukkit.scheduler.BukkitRunnable
 import org.bukkit.scheduler.BukkitTask
 
-interface TimeHandler {
-    fun timePlay()
-    fun timePause()
-    fun getHour(): Int
-    fun getMinutes(): Int
-    fun getSeason(): Season
-}
-
-object TimeManager : TimeHandler {
+object TimeManager {
     private var timeTask: BukkitTask? = null
 
-    override fun timePlay() {
+    fun timePlay() {
         if (timeTask != null) return
         timeTask = object : BukkitRunnable() {
             override fun run() {
@@ -55,14 +47,14 @@ object TimeManager : TimeHandler {
         }.runTaskTimer(StardewValley.instance, 0, 125L)
     }
 
-    override fun timePause() {
+    fun timePause() {
         timeTask?.cancel()
         timeTask = null
     }
 
-    override fun getHour(): Int = gameData.hour
-    override fun getMinutes(): Int = gameData.minute
-    override fun getSeason(): Season = gameData.season
+    fun getHour(): Int = gameData.hour
+    fun getMinutes(): Int = gameData.minute
+    fun getSeason(): Season = gameData.season
 
     private fun advanceTime() {
         gameData.minute += 10
@@ -82,7 +74,7 @@ object TimeManager : TimeHandler {
 
     private fun bossBar() {
         timeBossBar.name(
-            MiniMessage.miniMessage().deserialize("${gameData.day}일 | ${gameData.hour}시 ${gameData.minute}분")
+            MiniMessage.miniMessage().deserialize("\u3401 ${gameData.day}일 | \u3402 ${gameData.hour}시 ${gameData.minute}분")
         )
     }
 
