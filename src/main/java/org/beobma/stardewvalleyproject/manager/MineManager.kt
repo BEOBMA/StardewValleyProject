@@ -500,9 +500,42 @@ object MineManager {
     /** 적 스폰 실행 */
     fun Mine.spawnEnemysMine() {
         enemys.filter { !it.isSpawn && !it.isDead }.forEach {
-            val entity = Bukkit.getWorlds().first().spawnEntity(it.location, it.entityType)
-            it.isSpawn = true
-            it.enemyUUID = entity.uniqueId.toString()
+            val marker = world.spawnEntity(it.location, EntityType.MARKER)
+            val random = Random.nextInt(1, 3)
+            when (it.entityType) {
+                EntityType.DROWNED -> {
+                    if (random == 1) {
+                        Bukkit.getServer().dispatchCommand(marker, "function zombie:magma_zombie_summon")
+                    }
+                    else {
+                        Bukkit.getServer().dispatchCommand(marker, "function zombie:magma_spaceman_zombie_summon")
+                    }
+                }
+                EntityType.HUSK -> {
+                    if (random == 1) {
+                        Bukkit.getServer().dispatchCommand(marker, "function zombie:nature_zombie_summon")
+                    }
+                    else {
+                        Bukkit.getServer().dispatchCommand(marker, "function zombie:nature_spaceman_zombie_summon")
+                    }
+                }
+                EntityType.ZOMBIE -> {
+                    if (random == 1) {
+                        Bukkit.getServer().dispatchCommand(marker, "function zombie:rock_zombie_summon")
+                    }
+                    else {
+                        Bukkit.getServer().dispatchCommand(marker, "function zombie:rock_spaceman_zombie_summon")
+                    }
+                }
+                else -> {
+
+                }
+            }
+            marker.remove()
+            // 광산 엔티티를 함수로 소환하여, 해당 엔티티에 접근할 수 없음.
+            // 해당 문제를 해결하지 않으면 광산 진입 시에만 엔티티를 소환하거나, 데이터를 저장하는 기능에 문제가 발생함.
+//            it.isSpawn = true
+//            it.enemyUUID = entity.uniqueId.toString()
         }
     }
 
