@@ -212,7 +212,7 @@ class OnPlayerInteract : Listener {
         }
 
         // 캡슐 상호작용
-        if (off.type == Material.SADDLE) {
+        if (off.type == Material.ORANGE_DYE) {
             val canShoot = mainCmd == CAPSULEGUN_CUSTOM_MODEL_DATA &&
                     status.capsuleType == CapsuleType.None &&
                     offCmd in CAPSULE_MODEL_DATAS

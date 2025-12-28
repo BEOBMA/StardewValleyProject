@@ -1,4 +1,4 @@
-name: StardewValley
+name: PrcCore
 version: '${version}'
 main: org.beobma.prccore.PrcCore
 api-version: '1.20'

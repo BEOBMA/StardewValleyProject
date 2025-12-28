@@ -635,6 +635,7 @@ object MineManager {
             scale,
             AxisAngle4f(Math.PI.toFloat(), 0f, 1f, 0f)
         )
+        itemDisplay.isInvulnerable = true
         itemDisplay.setItemStack(itemStack)
         return itemDisplay
     }

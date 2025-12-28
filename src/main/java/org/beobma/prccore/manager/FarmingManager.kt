@@ -54,7 +54,7 @@ object FarmingManager {
         0 to -1,  0 to 0,  0 to 1,
         1 to -1,  1 to 0,  1 to 1
     )
-    private const val WEED_CHANCE_PERCENT = 15
+    private const val WEED_CHANCE_PERCENT = 4
     private const val MODEL_WEED = 41
     private const val MODEL_DEAD_GRASS = 42
     private const val WATER_PARTICLE = 10
@@ -238,6 +238,7 @@ object FarmingManager {
         // 디스플레이
         plantList.add(plant)
         val display = world.spawn(block.location.add(0.5, 1.4, 0.5), ItemDisplay::class.java)
+        display.isInvulnerable = true
         plant.uuidString = display.uniqueId.toString()
 
         val model = if (plant.plantStatus.isWeeds) MODEL_WEED else (plantModels[registered] ?: MODEL_WEED)
