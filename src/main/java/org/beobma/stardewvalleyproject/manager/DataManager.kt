@@ -3,6 +3,7 @@ package org.beobma.stardewvalleyproject.manager
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.Json
 import org.beobma.stardewvalleyproject.StardewValley
+import org.beobma.stardewvalleyproject.data.AdvancementData
 import org.beobma.stardewvalleyproject.data.GameData
 import org.beobma.stardewvalleyproject.data.LocationListSerializer
 import org.beobma.stardewvalleyproject.mine.Mine
@@ -31,12 +32,14 @@ object DataManager {
     var plantList: MutableList<Plant> = mutableListOf()
     var interactionFarmlands: MutableList<Location> = mutableListOf()
     var playerList: MutableList<Player> = mutableListOf()
+    var advancementList: MutableList<AdvancementData> = mutableListOf()
 
     /** 전체 저장 */
     fun saveAll() {
         saveEncrypted("data.dat", gameData)
         saveEncrypted("mines.dat", mines)
         saveEncrypted("plants.dat", plantList)
+        saveEncrypted("advancements.dat", advancementList)
         saveEncrypted("interaction_locs.dat", interactionFarmlands, LocationListSerializer)
     }
 
@@ -45,6 +48,7 @@ object DataManager {
         gameData = loadEncrypted("data.dat") ?: defaultGameMeta()
         mines = loadEncrypted("mines.dat") ?: mutableListOf()
         plantList = loadEncrypted("plants.dat") ?: mutableListOf()
+        advancementList = loadEncrypted("advancements.dat") ?: mutableListOf()
         interactionFarmlands = (loadEncrypted("interaction_locs.dat", LocationListSerializer) ?: mutableListOf()).toMutableList()
     }
 

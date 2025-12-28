@@ -66,7 +66,7 @@ object TimeManager {
     }
 
     var timeBossBar: BossBar = BossBar.bossBar(
-        MiniMessage.miniMessage().deserialize("보스바").shadowColor(ShadowColor.shadowColor(0x00FFFFFF)),
+        MiniMessage.miniMessage().deserialize("로딩 중...").shadowColor(ShadowColor.shadowColor(0x00FFFFFF)),
         1.0f,
         BossBar.Color.YELLOW,
         BossBar.Overlay.PROGRESS
@@ -74,7 +74,9 @@ object TimeManager {
 
     private fun bossBar() {
         timeBossBar.name(
-            MiniMessage.miniMessage().deserialize("\u3401 ${gameData.day}일 | \u3402 ${gameData.hour}시 ${gameData.minute}분")
+            MiniMessage.miniMessage().deserialize(
+                "<color:#fdfdfd>\u3401 ${gameData.day}일 | \u3402 ${gameData.hour}시 ${gameData.minute}분</color>"
+            )
         )
     }
 

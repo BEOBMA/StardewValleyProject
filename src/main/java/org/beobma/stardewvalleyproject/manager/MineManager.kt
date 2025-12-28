@@ -5,6 +5,7 @@ import kr.eme.semiMission.enums.MissionVersion
 import net.kyori.adventure.text.minimessage.MiniMessage
 import org.beobma.stardewvalleyproject.StardewValley
 import org.beobma.stardewvalleyproject.entity.Enemy
+import org.beobma.stardewvalleyproject.manager.AdvancementManager.grantAdvancement
 import org.beobma.stardewvalleyproject.manager.CustomModelDataManager.getCustomModelData
 import org.beobma.stardewvalleyproject.manager.DataManager.gameData
 import org.beobma.stardewvalleyproject.manager.DataManager.mines
@@ -118,6 +119,11 @@ object MineManager {
         Bukkit.getPluginManager().callEvent(
             MissionEvent(this, MissionVersion.V1, "PLAYER_PROGRESS", "mine_module", nextMine.floor)
         )
+
+        // 60층까지 도달하세요
+        if (nextMine.floor >= 60) {
+            grantAdvancement(this, "module/normal/diglett")
+        }
 
 
 

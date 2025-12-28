@@ -7,6 +7,7 @@ import io.papermc.paper.datacomponent.item.consumable.ConsumeEffect
 import io.papermc.paper.datacomponent.item.consumable.ItemUseAnimation
 import kr.eme.semiMission.api.events.MissionEvent
 import kr.eme.semiMission.enums.MissionVersion
+import org.beobma.stardewvalleyproject.manager.AdvancementManager.addAdvancementInt
 import org.beobma.stardewvalleyproject.manager.CustomModelDataManager.getCustomModelData
 import org.beobma.stardewvalleyproject.manager.DataManager.interactionFarmlands
 import org.beobma.stardewvalleyproject.manager.DataManager.plantList
@@ -187,13 +188,13 @@ object FarmingManager {
 
         when (cmd) {
             WATERINGCAN_CUSTOM_MODEL_DATA -> {
-                spawnParticle(Particle.FALLING_WATER, block.location.add(0.5, 0.5, 0.5), WATER_PARTICLE, 0.1, 0.1, 0.1, 1.0)
+                spawnParticle(Particle.FALLING_WATER, block.location.add(0.5, 1.0, 0.5), WATER_PARTICLE, 0.1, 0.1, 0.1, 1.0)
                 fireMission(MissionVersion.V1,"FARMING", "farming_module", 1)
                 moistenFarmland(block)
             }
             PUMP_WATERINGCAN_CUSTOM_MODEL_DATA -> {
                 forEach3x3(block) { b ->
-                    spawnParticle(Particle.FALLING_WATER, b.location.add(0.5, 0.5, 0.5), WATER_PARTICLE, 0.1, 0.1, 0.1, 1.0)
+                    spawnParticle(Particle.FALLING_WATER, b.location.add(0.5, 1.0, 0.5), WATER_PARTICLE, 0.1, 0.1, 0.1, 1.0)
                     fireMission(MissionVersion.V1,"FARMING", "farming_module", 1)
                     moistenFarmland(b)
                 }
@@ -302,6 +303,9 @@ object FarmingManager {
             item.setData(DataComponentTypes.CONSUMABLE, consumable)
 
             inventory.addItem(item)
+
+            // 작물 200개 수확
+            addAdvancementInt(this, "module/normal/frederick_the_great", 200)
         }
 
         if (plant.harvestAmount != 1) {

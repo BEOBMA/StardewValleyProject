@@ -54,6 +54,7 @@ class StardewValley : JavaPlugin() {
         server.pluginManager.registerEvents(OnEntityDeath(), this)
         server.pluginManager.registerEvents(OnPlayerMove(), this)
         server.pluginManager.registerEvents(OnPlayerItemHeld(), this)
+        server.pluginManager.registerEvents(OnConsume(), this)
     }
 
     private fun registerPlants() {
