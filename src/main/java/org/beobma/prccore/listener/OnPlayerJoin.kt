@@ -5,6 +5,8 @@ import org.beobma.prccore.manager.DataManager.playerList
 import org.beobma.prccore.manager.MineManager.showMineFloorSelector
 import org.beobma.prccore.manager.PlantManager.getRegisterPlants
 import org.beobma.prccore.manager.PlantManager.getSeedItem
+import org.beobma.prccore.manager.TimeManager.handleEndOfDayWarnings
+import org.beobma.prccore.manager.TimeManager.sendLateNightReminder
 import org.beobma.prccore.manager.TimeManager.showTimeBossBar
 import org.beobma.prccore.manager.TimeManager.timePlay
 import org.beobma.prccore.tool.Capsule
@@ -23,6 +25,8 @@ class OnPlayerJoin : Listener {
         playerList.add(player)
         gameData.maxMineFloor = 60
         showTimeBossBar(player)
+        sendLateNightReminder()
+        handleEndOfDayWarnings()
         timePlay()
         player.inventory.run {
             Hoe().hoes.forEach {

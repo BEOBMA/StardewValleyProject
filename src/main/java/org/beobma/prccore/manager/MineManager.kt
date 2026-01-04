@@ -547,7 +547,7 @@ object MineManager {
     private fun runCommand(location: Location, command: String) {
         location.world.spawn(location, CommandMinecart::class.java) { entity ->
             entity.setCommand(command)
-            Bukkit.getServer().dispatchCommand(entity, command) // "/" 없이
+            Bukkit.getServer().dispatchCommand(entity, command)
             entity.remove()
         }
     }

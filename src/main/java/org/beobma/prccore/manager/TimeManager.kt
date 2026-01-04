@@ -9,6 +9,7 @@ import org.beobma.prccore.manager.DataManager.interactionFarmlands
 import org.beobma.prccore.manager.DataManager.plantList
 import org.beobma.prccore.manager.DataManager.playerList
 import org.beobma.prccore.manager.FarmingManager.growth
+import org.beobma.prccore.manager.FarmingManager.removePlant
 import org.beobma.prccore.manager.MineManager.nextDay
 import org.beobma.prccore.plant.Plant
 import org.beobma.prccore.plant.list.DeadGrassPlant
@@ -17,6 +18,8 @@ import org.bukkit.Location
 import org.bukkit.Material
 import org.bukkit.block.data.type.Farmland
 import org.bukkit.entity.Player
+import org.bukkit.potion.PotionEffect
+import org.bukkit.potion.PotionEffectType
 import org.bukkit.scheduler.BukkitRunnable
 import org.bukkit.scheduler.BukkitTask
 
@@ -28,16 +31,8 @@ object TimeManager {
         timeTask = object : BukkitRunnable() {
             override fun run() {
                 advanceTime()
-
-                if ((gameData.hour == 22 && gameData.minute == 0) || (gameData.hour == 23 && gameData.minute == 0)) {
-                    playerList.forEach { player ->
-                        player.sendActionBar(
-                            MiniMessage.miniMessage().deserialize(
-                                "<bold>곧 12시입니다. 11시 50분까지 홈 모듈로 복귀하지 않으면 강제로 홈 모듈로 이동됩니다."
-                            )
-                        )
-                    }
-                }
+                sendLateNightReminder()
+                handleEndOfDayWarnings()
 
                 if (gameData.hour == 23 && gameData.minute == 50) {
                     gameData.hour = 0
@@ -120,5 +115,40 @@ object TimeManager {
         // 모든 플레이어 홈 모듈 이동
         nextDay()
         timePlay()
+
+        playerList.forEach { player ->
+            player.removePotionEffect(PotionEffectType.SLOWNESS)
+            player.removePotionEffect(PotionEffectType.BLINDNESS)
+        }
+    }
+
+
+    fun sendLateNightReminder() {
+        // TODO(테스트)
+//        if ((gameData.hour == 22 && gameData.minute == 0) || (gameData.hour == 23 && gameData.minute == 0)) {
+//            playerList.forEach { player ->
+//                player.sendActionBar(
+//                    MiniMessage.miniMessage().deserialize(
+//                        "<bold>곧 12시입니다. 11시 50분까지 홈 모듈로 복귀하지 않으면 강제로 홈 모듈로 이동됩니다."
+//                    )
+//                )
+//            }
+//        }
+    }
+
+    fun handleEndOfDayWarnings() {
+        // TODO(테스트)
+//        if ((gameData.hour == 22 && gameData.minute == 0)) {
+//            playerList.forEach { player ->
+//                player.addPotionEffect(PotionEffect(PotionEffectType.SLOWNESS, PotionEffect.INFINITE_DURATION, 0, true, true, true))
+//                player.addPotionEffect(PotionEffect(PotionEffectType.BLINDNESS, PotionEffect.INFINITE_DURATION, 0, true, true, true))
+//            }
+//        }
+//        else if ((gameData.hour == 23 && gameData.minute == 0)) {
+//            playerList.forEach { player ->
+//                player.addPotionEffect(PotionEffect(PotionEffectType.SLOWNESS, PotionEffect.INFINITE_DURATION, 1, true, true, true))
+//                player.addPotionEffect(PotionEffect(PotionEffectType.BLINDNESS, PotionEffect.INFINITE_DURATION, 1, true, true, true))
+//            }
+//        }
     }
 }

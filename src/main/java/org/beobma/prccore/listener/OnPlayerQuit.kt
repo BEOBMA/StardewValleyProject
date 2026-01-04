@@ -10,6 +10,7 @@ import org.bukkit.Location
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
 import org.bukkit.event.player.PlayerQuitEvent
+import org.bukkit.potion.PotionEffectType
 
 class OnPlayerQuit : Listener {
     private val world = Bukkit.getWorlds().first()
@@ -19,6 +20,9 @@ class OnPlayerQuit : Listener {
         val player = event.player
         val currentMine = mines.find { it.players.contains(player) }
         unShowTimeBossBar(player)
+        // TODO(테스트)
+//        player.removePotionEffect(PotionEffectType.SLOWNESS)
+//        player.removePotionEffect(PotionEffectType.BLINDNESS)
         playerList.remove(player)
         if (currentMine != null) {
             currentMine.players.remove(player)
